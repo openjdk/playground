@@ -27,7 +27,7 @@ repository=playground
 jbs=JDK
 
 [checks]
-error=author,reviewers,whitespace,executable
+error=author,whitespace,executable
 
 [census]
 version=0
@@ -35,6 +35,3 @@ domain=openjdk.org
 
 [checks "whitespace"]
 files=.*\.java$|.*\.c$|.*\.h$|.*.\cpp$|.*\.hpp$
-
-[checks "reviewers"]
-reviewers=1
