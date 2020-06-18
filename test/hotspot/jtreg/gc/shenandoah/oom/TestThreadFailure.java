@@ -25,10 +25,9 @@
 /**
  * @test TestThreadFailure
  * @summary Test OOME in separate thread is recoverable
- * @key gc
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
  * @library /test/lib
- * @run main TestThreadFailure
+ * @run driver TestThreadFailure
  */
 
 import java.util.*;

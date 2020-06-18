@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,6 +75,7 @@ bool ModuleEntry::should_show_version() {
     const char* loc = location()->as_C_string();
     ClassLoaderData* cld = loader_data();
 
+    assert(!cld->has_class_mirror_holder(), "module's cld should have a ClassLoader holder not a Class holder");
     if ((cld->is_the_null_class_loader_data() || cld->is_platform_class_loader_data()) &&
         (strncmp(loc, "jrt:/java.", 10) == 0)) {
       return false;
@@ -135,6 +136,7 @@ bool ModuleEntry::can_read(ModuleEntry* m) const {
   // injecting dependencies that require the default read edges for resolution.
   if (this->has_default_read_edges() && !m->is_named()) {
     ClassLoaderData* cld = m->loader_data();
+    assert(!cld->has_class_mirror_holder(), "module's cld should have a ClassLoader holder not a Class holder");
     if (cld->is_the_null_class_loader_data() || cld->is_system_class_loader_data()) {
       return true; // default read edge
     }
@@ -159,7 +161,7 @@ void ModuleEntry::add_read(ModuleEntry* m) {
   } else {
     if (_reads == NULL) {
       // Lazily create a module's reads list
-      _reads = new (ResourceObj::C_HEAP, mtModule)GrowableArray<ModuleEntry*>(MODULE_READS_SIZE, true);
+      _reads = new (ResourceObj::C_HEAP, mtModule) GrowableArray<ModuleEntry*>(MODULE_READS_SIZE, mtModule);
     }
 
     // Determine, based on this newly established read edge to module m,
