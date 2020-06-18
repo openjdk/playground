@@ -134,8 +134,15 @@ void Verifier::trace_class_resolution(Klass* resolve_class, InstanceKlass* verif
 void Verifier::log_end_verification(outputStream* st, const char* klassName, Symbol* exception_name, TRAPS) {
   if (HAS_PENDING_EXCEPTION) {
     st->print("Verification for %s has", klassName);
-    st->print_cr(" exception pending %s ",
+    oop message = java_lang_Throwable::message(PENDING_EXCEPTION);
+    if (message != NULL) {
+      char* ex_msg = java_lang_String::as_utf8_string(message);
+      st->print_cr(" exception pending '%s %s'",
+                 PENDING_EXCEPTION->klass()->external_name(), ex_msg);
+    } else {
+      st->print_cr(" exception pending %s ",
                  PENDING_EXCEPTION->klass()->external_name());
+    }
   } else if (exception_name != NULL) {
     st->print_cr("Verification for %s failed", klassName);
   }
@@ -2080,6 +2087,8 @@ Klass* ClassVerifier::load_class(Symbol* name, TRAPS) {
   // Get current loader and protection domain first.
   oop loader = current_class()->class_loader();
   oop protection_domain = current_class()->protection_domain();
+
+  assert(name_in_supers(name, current_class()), "name should be a super class");
 
   Klass* kls = SystemDictionary::resolve_or_fail(
     name, Handle(THREAD, loader), Handle(THREAD, protection_domain),

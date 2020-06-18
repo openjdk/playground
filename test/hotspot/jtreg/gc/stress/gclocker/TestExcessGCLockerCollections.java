@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@ package gc.stress.gclocker;
 
 /*
  * @test TestExcessGCLockerCollections
- * @key gc
  * @bug 8048556
  * @summary Check for GC Locker initiated GCs that immediately follow another
  * GC and so have very little needing to be collected.
@@ -176,7 +175,7 @@ public class TestExcessGCLockerCollections {
 
         // GC and other options obtained from test framework.
         ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(
-            true, finalArgs.toArray(new String[0]));
+            true, finalArgs);
         OutputAnalyzer output = new OutputAnalyzer(pb.start());
         output.shouldHaveExitValue(0);
         //System.out.println("------------- begin stdout ----------------");

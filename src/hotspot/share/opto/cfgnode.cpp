@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1531,20 +1531,32 @@ static Node* is_absolute( PhaseGVN *phase, PhiNode *phi_root, int true_path) {
   // is_diamond_phi() has guaranteed the correctness of the nodes sequence:
   // phi->region->if_proj->ifnode->bool->cmp
   BoolNode *bol = phi_root->in(0)->in(1)->in(0)->in(1)->as_Bool();
+  Node *cmp = bol->in(1);
 
   // Check bool sense
-  switch( bol->_test._test ) {
-  case BoolTest::lt: cmp_zero_idx = 1; phi_x_idx = true_path;  break;
-  case BoolTest::le: cmp_zero_idx = 2; phi_x_idx = false_path; break;
-  case BoolTest::gt: cmp_zero_idx = 2; phi_x_idx = true_path;  break;
-  case BoolTest::ge: cmp_zero_idx = 1; phi_x_idx = false_path; break;
-  default:           return NULL;                              break;
+  if (cmp->Opcode() == Op_CmpF || cmp->Opcode() == Op_CmpD) {
+    switch (bol->_test._test) {
+    case BoolTest::lt: cmp_zero_idx = 1; phi_x_idx = true_path;  break;
+    case BoolTest::le: cmp_zero_idx = 2; phi_x_idx = false_path; break;
+    case BoolTest::gt: cmp_zero_idx = 2; phi_x_idx = true_path;  break;
+    case BoolTest::ge: cmp_zero_idx = 1; phi_x_idx = false_path; break;
+    default:           return NULL;                              break;
+    }
+  } else if (cmp->Opcode() == Op_CmpI || cmp->Opcode() == Op_CmpL) {
+    switch (bol->_test._test) {
+    case BoolTest::lt:
+    case BoolTest::le: cmp_zero_idx = 2; phi_x_idx = false_path; break;
+    case BoolTest::gt:
+    case BoolTest::ge: cmp_zero_idx = 2; phi_x_idx = true_path;  break;
+    default:           return NULL;                              break;
+    }
   }
 
   // Test is next
-  Node *cmp = bol->in(1);
   const Type *tzero = NULL;
-  switch( cmp->Opcode() ) {
+  switch (cmp->Opcode()) {
+  case Op_CmpI:    tzero = TypeInt::ZERO; break;  // Integer ABS
+  case Op_CmpL:    tzero = TypeLong::ZERO; break; // Long ABS
   case Op_CmpF:    tzero = TypeF::ZERO; break; // Float ABS
   case Op_CmpD:    tzero = TypeD::ZERO; break; // Double ABS
   default: return NULL;
@@ -1579,13 +1591,29 @@ static Node* is_absolute( PhaseGVN *phase, PhiNode *phi_root, int true_path) {
     if (flip) {
       x = new SubFNode(sub->in(1), phase->transform(x));
     }
-  } else {
+  } else if (tzero == TypeD::ZERO) {
     if( sub->Opcode() != Op_SubD ||
         sub->in(2) != x ||
         phase->type(sub->in(1)) != tzero ) return NULL;
     x = new AbsDNode(x);
     if (flip) {
       x = new SubDNode(sub->in(1), phase->transform(x));
+    }
+  } else if (tzero == TypeInt::ZERO) {
+    if (sub->Opcode() != Op_SubI ||
+        sub->in(2) != x ||
+        phase->type(sub->in(1)) != tzero) return NULL;
+    x = new AbsINode(x);
+    if (flip) {
+      x = new SubINode(sub->in(1), phase->transform(x));
+    }
+  } else {
+    if (sub->Opcode() != Op_SubL ||
+        sub->in(2) != x ||
+        phase->type(sub->in(1)) != tzero) return NULL;
+    x = new AbsLNode(x);
+    if (flip) {
+      x = new SubLNode(sub->in(1), phase->transform(x));
     }
   }
 
@@ -1915,13 +1943,12 @@ Node *PhiNode::Ideal(PhaseGVN *phase, bool can_reshape) {
       // Wait until after parsing for the type information to propagate from the casts.
       assert(can_reshape, "Invalid during parsing");
       const Type* phi_type = bottom_type();
-      assert(phi_type->isa_int() || phi_type->isa_long() || phi_type->isa_ptr(), "bad phi type");
-      // Add casts to carry the control dependency of the Phi that is going away
+      assert(phi_type->isa_int() || phi_type->isa_ptr(), "bad phi type");
+      // Add casts to carry the control dependency of the Phi that is
+      // going away
       Node* cast = NULL;
       if (phi_type->isa_int()) {
         cast = ConstraintCastNode::make_cast(Op_CastII, r, uin, phi_type, true);
-      } else if (phi_type->isa_long()) {
-        cast = ConstraintCastNode::make_cast(Op_CastLL, r, uin, phi_type, true);
       } else {
         const Type* uin_type = phase->type(uin);
         if (!phi_type->isa_oopptr() && !uin_type->isa_oopptr()) {
@@ -2074,7 +2101,7 @@ Node *PhiNode::Ideal(PhaseGVN *phase, bool can_reshape) {
         }
         // Accumulate type for resulting Phi
         base_type = base_type->meet_speculative(in(i)->in(AddPNode::Base)->bottom_type());
-        address_type = address_type->meet_speculative(in(i)->in(AddPNode::Base)->bottom_type());
+        address_type = address_type->meet_speculative(in(i)->in(AddPNode::Address)->bottom_type());
       }
       if (doit && base == NULL) {
         // Check for neighboring AddP nodes in a tree.

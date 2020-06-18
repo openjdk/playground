@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,6 +46,7 @@ public final class PlatformEventType extends Type {
     private final int stackTraceOffset;
 
     // default values
+    private boolean largeSize = false;
     private boolean enabled = false;
     private boolean stackTraceEnabled = true;
     private long thresholdTicks = 0;
@@ -61,7 +62,7 @@ public final class PlatformEventType extends Type {
     private boolean isInstrumented;
     private boolean markForInstrumentation;
     private boolean registered = true;
-    private boolean commitable = enabled && registered;
+    private boolean committable = enabled && registered;
 
 
     // package private
@@ -161,7 +162,7 @@ public final class PlatformEventType extends Type {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-        updateCommitable();
+        updateCommittable();
         if (isJVM) {
             if (isMethodSampling) {
                 long p = enabled ? period : 0;
@@ -247,7 +248,7 @@ public final class PlatformEventType extends Type {
     public boolean setRegistered(boolean registered) {
         if (this.registered != registered) {
             this.registered = registered;
-            updateCommitable();
+            updateCommittable();
             LogTag logTag = isJVM() || isJDK() ? LogTag.JFR_SYSTEM_EVENT : LogTag.JFR_EVENT;
             if (registered) {
                 Logger.log(logTag, LogLevel.INFO, "Registered " + getLogName());
@@ -262,8 +263,8 @@ public final class PlatformEventType extends Type {
         return false;
     }
 
-    private void updateCommitable() {
-        this.commitable = enabled && registered;
+    private void updateCommittable() {
+        this.committable = enabled && registered;
     }
 
     public final boolean isRegistered() {
@@ -271,11 +272,19 @@ public final class PlatformEventType extends Type {
     }
 
     // Efficient check of enabled && registered
-    public boolean isCommitable() {
-        return commitable;
+    public boolean isCommittable() {
+        return committable;
     }
 
     public int getStackTraceOffset() {
         return stackTraceOffset;
+    }
+
+    public boolean isLargeSize() {
+        return largeSize;
+    }
+
+    public void setLargeSize() {
+        largeSize = true;
     }
 }
