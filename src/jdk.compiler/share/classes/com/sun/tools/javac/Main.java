@@ -29,7 +29,7 @@ import java.io.PrintWriter;
 
 /**
  * A legacy programmatic interface for the Java Programming Language
- * compiler, javac.
+ * compiler, javac. A change.
  * See the <a href="{@docRoot}/jdk.compiler/module-summary.html">{@code jdk.compiler}</a>
  * module for details on replacement APIs.
  */
