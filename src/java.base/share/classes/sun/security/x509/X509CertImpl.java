@@ -328,9 +328,11 @@ public class X509CertImpl extends X509Certificate implements DerEncoder {
      *
      * @exception IOException on encoding error.
      */
-    public void derEncode(OutputStream out) throws IOException {
-        if (signedCert == null)
-            throw new IOException("Null certificate to encode");
+    @Override
+    public void derEncode(DerOutputStream out) {
+        if (signedCert == null) {
+            throw new IllegalStateException("Null certificate to encode");
+        }
         out.write(signedCert.clone());
     }
 
@@ -578,50 +580,45 @@ public class X509CertImpl extends X509Certificate implements DerEncoder {
             throws CertificateException, NoSuchAlgorithmException,
             InvalidKeyException, InvalidAlgorithmParameterException,
             NoSuchProviderException, SignatureException {
-        try {
-            if (readOnly) {
-                throw new CertificateEncodingException(
-                        "cannot over-write existing certificate");
-            }
-            Signature sigEngine = null;
-            if (provider == null || provider.isEmpty()) {
-                sigEngine = Signature.getInstance(algorithm);
-            } else {
-                sigEngine = Signature.getInstance(algorithm, provider);
-            }
+        if (readOnly) {
+            throw new CertificateEncodingException(
+                    "cannot over-write existing certificate");
+        }
+        Signature sigEngine = null;
+        if (provider == null || provider.isEmpty()) {
+            sigEngine = Signature.getInstance(algorithm);
+        } else {
+            sigEngine = Signature.getInstance(algorithm, provider);
+        }
 
-            SignatureUtil.initSignWithParam(sigEngine, key, signingParams,
-                    null);
+        SignatureUtil.initSignWithParam(sigEngine, key, signingParams,
+                null);
 
-            if (signingParams != null) {
-                algId = AlgorithmId.get(sigEngine.getParameters());
-            } else {
-                // in case the name is reset
-                algId = AlgorithmId.get(sigEngine.getAlgorithm());
-            }
-            DerOutputStream out = new DerOutputStream();
-            DerOutputStream tmp = new DerOutputStream();
+        if (signingParams != null) {
+            algId = AlgorithmId.get(sigEngine.getParameters());
+        } else {
+            // in case the name is reset
+            algId = AlgorithmId.get(sigEngine.getAlgorithm());
+        }
+        DerOutputStream out = new DerOutputStream();
+        DerOutputStream tmp = new DerOutputStream();
 
-            // encode certificate info
-            info.encode(tmp);
-            byte[] rawCert = tmp.toByteArray();
+        // encode certificate info
+        info.encode(tmp);
+        byte[] rawCert = tmp.toByteArray();
 
-            // encode algorithm identifier
-            algId.encode(tmp);
+        // encode algorithm identifier
+        algId.derEncode(tmp);
 
-            // Create and encode the signature itself.
-            sigEngine.update(rawCert, 0, rawCert.length);
-            signature = sigEngine.sign();
-            tmp.putBitString(signature);
+        // Create and encode the signature itself.
+        sigEngine.update(rawCert, 0, rawCert.length);
+        signature = sigEngine.sign();
+        tmp.putBitString(signature);
 
-            // Wrap the signed data in a SEQUENCE { data, algorithm, sig }
-            out.write(DerValue.tag_Sequence, tmp);
-            signedCert = out.toByteArray();
-            readOnly = true;
-
-        } catch (IOException e) {
-            throw new CertificateEncodingException(e.toString());
-      }
+        // Wrap the signed data in a SEQUENCE { data, algorithm, sig }
+        out.write(DerValue.tag_Sequence, tmp);
+        signedCert = out.toByteArray();
+        readOnly = true;
     }
 
     /**
@@ -1605,13 +1602,7 @@ public class X509CertImpl extends X509Certificate implements DerEncoder {
             default:
                 // add DER encoded form
                 DerOutputStream derOut = new DerOutputStream();
-                try {
-                    name.encode(derOut);
-                } catch (IOException ioe) {
-                    // should not occur since name has already been decoded
-                    // from cert (this would indicate a bug in our code)
-                    throw new RuntimeException("name cannot be encoded", ioe);
-                }
+                name.derEncode(derOut);
                 nameEntry.add(derOut.toByteArray());
                 break;
             }

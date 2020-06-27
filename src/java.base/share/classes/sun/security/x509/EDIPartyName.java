@@ -26,6 +26,8 @@
 package sun.security.x509;
 
 import java.io.IOException;
+import java.util.Objects;
+
 import sun.security.util.*;
 
 /**
@@ -48,8 +50,8 @@ public class EDIPartyName implements GeneralNameInterface {
     private static final byte TAG_ASSIGNER = 0;
     private static final byte TAG_PARTYNAME = 1;
 
-    private String assigner = null;
-    private String party = null;
+    private final String assigner;
+    private final String party;
 
     private int myhash = -1;
 
@@ -61,7 +63,7 @@ public class EDIPartyName implements GeneralNameInterface {
      */
     public EDIPartyName(String assignerName, String partyName) {
         this.assigner = assignerName;
-        this.party = partyName;
+        this.party = Objects.requireNonNull(partyName);
     }
 
     /**
@@ -70,7 +72,7 @@ public class EDIPartyName implements GeneralNameInterface {
      * @param partyName the name of the EDI party.
      */
     public EDIPartyName(String partyName) {
-        this.party = partyName;
+        this(null, partyName);
     }
 
     /**
@@ -87,25 +89,33 @@ public class EDIPartyName implements GeneralNameInterface {
         if (len < 1 || len > 2)
             throw new IOException("Invalid encoding of EDIPartyName");
 
+        String tmpAssigner = null;
+        String tmpParty = null;
         for (int i = 0; i < len; i++) {
             DerValue opt = seq[i];
             if (opt.isContextSpecific(TAG_ASSIGNER) &&
                 !opt.isConstructed()) {
-                if (assigner != null)
+                if (tmpAssigner != null)
                     throw new IOException("Duplicate nameAssigner found in"
                                           + " EDIPartyName");
                 opt = opt.data.getDerValue();
-                assigner = opt.getAsString();
+                tmpAssigner = opt.getAsString();
             }
             if (opt.isContextSpecific(TAG_PARTYNAME) &&
                 !opt.isConstructed()) {
-                if (party != null)
+                if (tmpParty != null)
                     throw new IOException("Duplicate partyName found in"
                                           + " EDIPartyName");
                 opt = opt.data.getDerValue();
-                party = opt.getAsString();
+                tmpParty = opt.getAsString();
             }
         }
+        if (tmpParty == null) {
+            throw new IOException("partyName unfound in"
+                    + " EDIPartyName");
+        }
+        assigner = tmpAssigner;
+        party = tmpParty;
     }
 
     /**
@@ -121,7 +131,8 @@ public class EDIPartyName implements GeneralNameInterface {
      * @param out the DER stream to encode the EDIPartyName to.
      * @exception IOException on encoding errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void derEncode(DerOutputStream out) {
         DerOutputStream tagged = new DerOutputStream();
         DerOutputStream tmp = new DerOutputStream();
 
@@ -132,8 +143,6 @@ public class EDIPartyName implements GeneralNameInterface {
             tagged.write(DerValue.createTag(DerValue.TAG_CONTEXT,
                                  false, TAG_ASSIGNER), tmp2);
         }
-        if (party == null)
-            throw  new IOException("Cannot have null partyName");
 
         // XXX - shd check is chars fit into PrintableString
         tmp.putPrintableString(party);
@@ -180,13 +189,8 @@ public class EDIPartyName implements GeneralNameInterface {
                 return false;
         }
         String otherParty = ((EDIPartyName)other).party;
-        if (this.party == null) {
-            if (otherParty != null)
-                return false;
-        } else {
-            if (!(this.party.equals(otherParty)))
-                return false;
-        }
+        if (!(this.party.equals(otherParty)))
+            return false;
         return true;
     }
 
@@ -197,7 +201,7 @@ public class EDIPartyName implements GeneralNameInterface {
      */
     public int hashCode() {
         if (myhash == -1) {
-            myhash = 37 + (party == null ? 1 : party.hashCode());
+            myhash = 37 + party.hashCode();
             if (assigner != null) {
                 myhash = 37 * myhash + assigner.hashCode();
             }

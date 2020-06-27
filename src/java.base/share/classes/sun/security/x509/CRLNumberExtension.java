@@ -61,7 +61,7 @@ implements CertAttrSet<String> {
     private String extensionLabel;
 
     // Encode this extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (crlNumber == null) {
             this.extensionValue = null;
             return;
@@ -198,8 +198,8 @@ implements CertAttrSet<String> {
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         encode(out, PKIXExtensions.CRLNumber_Id, true);
     }
 
@@ -207,18 +207,15 @@ implements CertAttrSet<String> {
      * Write the extension to the DerOutputStream.
      * (Also called by the subclass)
      */
-    protected void encode(OutputStream out, ObjectIdentifier extensionId,
-        boolean isCritical) throws IOException {
-
-       DerOutputStream  tmp = new DerOutputStream();
+    protected void encode(DerOutputStream out, ObjectIdentifier extensionId,
+        boolean isCritical) {
 
        if (this.extensionValue == null) {
            this.extensionId = extensionId;
            this.critical = isCritical;
            encodeThis();
        }
-       super.encode(tmp);
-       out.write(tmp.toByteArray());
+       super.encode(out);
     }
 
     /**

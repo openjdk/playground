@@ -69,7 +69,7 @@ implements CertAttrSet<String> {
     private int pathLen = -1;
 
     // Encode this extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         DerOutputStream out = new DerOutputStream();
         DerOutputStream tmp = new DerOutputStream();
 
@@ -183,8 +183,8 @@ implements CertAttrSet<String> {
       *
       * @param out the DerOutputStream to encode the extension to.
       */
-     public void encode(OutputStream out) throws IOException {
-         DerOutputStream tmp = new DerOutputStream();
+     @Override
+     public void encode(DerOutputStream out) {
          if (extensionValue == null) {
              this.extensionId = PKIXExtensions.BasicConstraints_Id;
              if (ca) {
@@ -194,9 +194,7 @@ implements CertAttrSet<String> {
              }
              encodeThis();
          }
-         super.encode(tmp);
-
-         out.write(tmp.toByteArray());
+         super.encode(out);
      }
 
     /**

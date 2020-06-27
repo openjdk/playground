@@ -156,7 +156,7 @@ public class TSRequest {
 
         // encode messageImprint
         DerOutputStream messageImprint = new DerOutputStream();
-        hashAlgorithmId.encode(messageImprint);
+        hashAlgorithmId.derEncode(messageImprint);
         messageImprint.putOctetString(hashValue);
         request.write(DerValue.tag_Sequence, messageImprint);
 

@@ -34,6 +34,7 @@
  */
 
 import sun.security.tools.keytool.Main;
+import sun.security.util.DerOutputStream;
 import sun.security.util.DerValue;
 import sun.security.x509.BasicConstraintsExtension;
 import sun.security.x509.CertificateExtensions;
@@ -202,7 +203,7 @@ public class ExtOptionCamelCase {
             // ATTENTION: the extensions created above might contain raw
             // extensions (not of a subtype) and we need to store and reload
             // it to resolve them to subtypes.
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            DerOutputStream bout = new DerOutputStream();
             exts.encode(bout);
             exts = new CertificateExtensions(new DerValue(bout.toByteArray()).data);
 

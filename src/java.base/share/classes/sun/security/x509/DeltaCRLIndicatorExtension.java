@@ -109,8 +109,8 @@ public class DeltaCRLIndicatorExtension extends CRLNumberExtension {
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-       DerOutputStream  tmp = new DerOutputStream();
-        super.encode(out, PKIXExtensions.DeltaCRLIndicator_Id, true);
+    @Override
+    public void encode(DerOutputStream out) {
+       super.encode(out, PKIXExtensions.DeltaCRLIndicator_Id, true);
     }
 }

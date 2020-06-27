@@ -500,7 +500,7 @@ public class PKCS9Attribute implements DerEncoder {
      * should be encoded as <code>T61String</code>s.
      */
     @Override
-    public void derEncode(OutputStream out) throws IOException {
+    public void derEncode(DerOutputStream out) {
         DerOutputStream temp = new DerOutputStream();
         temp.putOID(oid);
         switch (index) {
@@ -573,20 +573,20 @@ public class PKCS9Attribute implements DerEncoder {
             break;
 
         case 9:     // extended-certificate attribute -- not supported
-            throw new IOException("PKCS9 extended-certificate " +
+            throw new UnsupportedOperationException("PKCS9 extended-certificate " +
                                   "attribute not supported.");
             // break unnecessary
         case 10:    // issuerAndserialNumber attribute -- not supported
-            throw new IOException("PKCS9 IssuerAndSerialNumber" +
+            throw new UnsupportedOperationException("PKCS9 IssuerAndSerialNumber" +
                                   "attribute not supported.");
             // break unnecessary
         case 11:    // RSA DSI proprietary
         case 12:    // RSA DSI proprietary
-            throw new IOException("PKCS9 RSA DSI attributes" +
+            throw new UnsupportedOperationException("PKCS9 RSA DSI attributes" +
                                   "11 and 12, not supported.");
             // break unnecessary
         case 13:    // S/MIME unused attribute
-            throw new IOException("PKCS9 attribute #13 not supported.");
+            throw new UnsupportedOperationException("PKCS9 attribute #13 not supported.");
             // break unnecessary
 
         case 14:     // ExtensionRequest
@@ -596,17 +596,17 @@ public class PKCS9Attribute implements DerEncoder {
                 try {
                     exts.encode(temp2, true);
                 } catch (CertificateException ex) {
-                    throw new IOException(ex.toString());
+                    throw new IllegalArgumentException(ex.toString());
                 }
                 temp.write(DerValue.tag_Set, temp2.toByteArray());
             }
             break;
         case 15:    // SMIMECapability
-            throw new IOException("PKCS9 attribute #15 not supported.");
+            throw new UnsupportedOperationException("PKCS9 attribute #15 not supported.");
             // break unnecessary
 
         case 16:    // SigningCertificate
-            throw new IOException(
+            throw new UnsupportedOperationException(
                 "PKCS9 SigningCertificate attribute not supported.");
             // break unnecessary
 

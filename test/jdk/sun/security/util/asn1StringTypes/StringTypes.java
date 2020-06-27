@@ -63,7 +63,7 @@ public class StringTypes {
         derOut.putT61String(s);
         derOut.putBMPString(s);
 
-        derOut.derEncode(fout);
+        derOut.encode(fout);
         fout.close();
 
         FileInputStream fis = new FileInputStream(fileName);

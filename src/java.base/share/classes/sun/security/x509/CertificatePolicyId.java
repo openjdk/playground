@@ -80,7 +80,7 @@ public class CertificatePolicyId {
      * @param out the DerOutputStream to write the object to.
      * @exception IOException on errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         out.putOID(id);
     }
 

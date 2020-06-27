@@ -80,7 +80,7 @@ implements CertAttrSet<String> {
     private SerialNumber        serialNum = null;
 
     // Encode only the extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (id == null && names == null && serialNum == null) {
             this.extensionValue = null;
             return;
@@ -93,15 +93,11 @@ implements CertAttrSet<String> {
             tmp.writeImplicit(DerValue.createTag(DerValue.TAG_CONTEXT,
                               false, TAG_ID), tmp1);
         }
-        try {
-            if (names != null) {
-                DerOutputStream tmp1 = new DerOutputStream();
-                names.encode(tmp1);
-                tmp.writeImplicit(DerValue.createTag(DerValue.TAG_CONTEXT,
-                                  true, TAG_NAMES), tmp1);
-            }
-        } catch (Exception e) {
-            throw new IOException(e.toString());
+        if (names != null) {
+            DerOutputStream tmp1 = new DerOutputStream();
+            names.encode(tmp1);
+            tmp.writeImplicit(DerValue.createTag(DerValue.TAG_CONTEXT,
+                              true, TAG_NAMES), tmp1);
         }
         if (serialNum != null) {
             DerOutputStream tmp1 = new DerOutputStream();
@@ -218,15 +214,14 @@ implements CertAttrSet<String> {
      * @param out the OutputStream to write the extension to.
      * @exception IOException on error.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (this.extensionValue == null) {
             extensionId = PKIXExtensions.AuthorityKey_Id;
             critical = false;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**
@@ -314,7 +309,7 @@ implements CertAttrSet<String> {
     /**
      * Return the encoded key identifier, or null if not specified.
      */
-    public byte[] getEncodedKeyIdentifier() throws IOException {
+    public byte[] getEncodedKeyIdentifier() {
         if (id != null) {
             DerOutputStream derOut = new DerOutputStream();
             id.encode(derOut);

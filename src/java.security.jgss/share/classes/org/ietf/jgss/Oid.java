@@ -176,11 +176,7 @@ public class Oid {
 
         if (derEncoding == null) {
             DerOutputStream dout = new DerOutputStream();
-            try {
-                dout.putOID(oid);
-            } catch (IOException e) {
-                throw new GSSException(GSSException.FAILURE, e.getMessage());
-            }
+            dout.putOID(oid);
             derEncoding = dout.toByteArray();
         }
 

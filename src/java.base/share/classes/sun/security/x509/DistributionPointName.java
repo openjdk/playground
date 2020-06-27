@@ -28,7 +28,6 @@ package sun.security.x509;
 import java.io.IOException;
 import java.util.*;
 
-import sun.security.util.BitArray;
 import sun.security.util.DerOutputStream;
 import sun.security.util.DerValue;
 
@@ -167,7 +166,7 @@ public class DistributionPointName {
      * @param out the output stream.
      * @exception IOException on encoding error.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
 
         DerOutputStream theChoice = new DerOutputStream();
 
@@ -178,7 +177,7 @@ public class DistributionPointName {
                 theChoice);
 
         } else {
-            relativeName.encode(theChoice);
+            relativeName.derEncode(theChoice);
             out.writeImplicit(
                 DerValue.createTag(DerValue.TAG_CONTEXT, true,
                     TAG_RELATIVE_NAME),

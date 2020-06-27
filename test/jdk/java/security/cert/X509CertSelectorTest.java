@@ -343,7 +343,7 @@ public class X509CertSelectorTest {
         X509CertSelector selector = new X509CertSelector();
         GeneralNameInterface dnsName = new DNSName("foo.com");
         DerOutputStream tmp = new DerOutputStream();
-        dnsName.encode(tmp);
+        dnsName.derEncode(tmp);
         selector.addSubjectAlternativeName(2, tmp.toByteArray());
         checkMatch(selector, cert, false);
 
@@ -355,7 +355,7 @@ public class X509CertSelectorTest {
         GeneralName name = (GeneralName) names.get(0);
         selector.setSubjectAlternativeNames(null);
         DerOutputStream tmp2 = new DerOutputStream();
-        name.getName().encode(tmp2);
+        name.getName().derEncode(tmp2);
         selector.addSubjectAlternativeName(name.getType(), tmp2.toByteArray());
         checkMatch(selector, cert, true);
 
@@ -416,8 +416,8 @@ public class X509CertSelectorTest {
                     X500Name excludedDN2 = new X500Name("CN=Bogus, " + tree.getName().toString());
                     DerOutputStream derDN1 = new DerOutputStream();
                     DerOutputStream derDN2 = new DerOutputStream();
-                    excludedDN1.encode(derDN1);
-                    excludedDN2.encode(derDN2);
+                    excludedDN1.derEncode(derDN1);
+                    excludedDN2.derEncode(derDN2);
                     selector = new X509CertSelector();
                     selector.addPathToName(NAME_DIRECTORY, derDN1.toByteArray());
                     checkMatch(selector, cert, false);
@@ -438,8 +438,8 @@ public class X509CertSelectorTest {
                     X500Name permittedDN2 = new X500Name("CN=good, " + tree.getName().toString());
                     DerOutputStream derDN1 = new DerOutputStream();
                     DerOutputStream derDN2 = new DerOutputStream();
-                    permittedDN1.encode(derDN1);
-                    permittedDN2.encode(derDN2);
+                    permittedDN1.derEncode(derDN1);
+                    permittedDN2.derEncode(derDN2);
                     selector = new X509CertSelector();
                     selector.addPathToName(NAME_DIRECTORY, derDN1.toByteArray());
                     checkMatch(selector, cert, true);

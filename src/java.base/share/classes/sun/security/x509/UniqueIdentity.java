@@ -93,7 +93,7 @@ public class UniqueIdentity {
      * @param tag enocode it under the following tag.
      * @exception IOException on errors.
      */
-    public void encode(DerOutputStream out, byte tag) throws IOException {
+    public void encode(DerOutputStream out, byte tag) {
         byte[] bytes = id.toByteArray();
         int excessBits = bytes.length*8 - id.length();
 

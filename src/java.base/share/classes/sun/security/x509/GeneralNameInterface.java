@@ -36,7 +36,7 @@ import sun.security.util.*;
  * @author Amit Kapoor
  * @author Hemma Prafullchandra
  */
-public interface GeneralNameInterface {
+public interface GeneralNameInterface extends DerEncoder {
     /**
      * The list of names supported.
      */
@@ -64,15 +64,6 @@ public interface GeneralNameInterface {
      * defined above.
      */
     int getType();
-
-    /**
-     * Encode the name to the specified DerOutputStream.
-     *
-     * @param out the DerOutputStream to encode the GeneralName to.
-     * @exception IOException thrown if the GeneralName could not be
-     *            encoded.
-     */
-    void encode(DerOutputStream out) throws IOException;
 
     /**
      * Return type of constraint inputName places on this name:<ul>

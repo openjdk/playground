@@ -196,7 +196,7 @@ public class GeneralSubtree {
      *
      * @param out the DerOutputStream to encode this object to.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         DerOutputStream seq = new DerOutputStream();
 
         name.encode(seq);

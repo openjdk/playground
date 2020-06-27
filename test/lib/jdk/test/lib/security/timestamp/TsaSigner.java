@@ -178,7 +178,7 @@ public class TsaSigner {
             print("digestAlgo", digestAlgo);
             DerOutputStream digestAlgoOut = new DerOutputStream();
             AlgorithmId digestAlgoId = AlgorithmId.get(digestAlgo);
-            digestAlgoId.encode(digestAlgoOut);
+            digestAlgoId.derEncode(digestAlgoOut);
             byte[] hashedMessage = respParam.hashedMessage();
             debug("hashedMessage", hashedMessage);
             digestAlgoOut.putOctetString(hashedMessage);

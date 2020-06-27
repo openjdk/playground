@@ -85,7 +85,7 @@ implements CertAttrSet<String> {
     private int skipCerts = Integer.MAX_VALUE;
 
     // Encode this extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         DerOutputStream out = new DerOutputStream();
         out.putInteger(skipCerts);
         this.extensionValue = out.toByteArray();
@@ -160,16 +160,14 @@ implements CertAttrSet<String> {
       *
       * @param out the DerOutputStream to encode the extension to.
       */
-     public void encode(OutputStream out) throws IOException {
-         DerOutputStream tmp = new DerOutputStream();
+     @Override
+     public void encode(DerOutputStream out) {
          if (extensionValue == null) {
              this.extensionId = PKIXExtensions.InhibitAnyPolicy_Id;
              critical = true;
              encodeThis();
          }
-         super.encode(tmp);
-
-         out.write(tmp.toByteArray());
+         super.encode(out);
      }
 
     /**

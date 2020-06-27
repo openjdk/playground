@@ -110,7 +110,7 @@ public class SerialNumber {
      * @param out the DerOutputStream to marshal the contents to.
      * @exception IOException on errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         out.putInteger(serialNum);
     }
 

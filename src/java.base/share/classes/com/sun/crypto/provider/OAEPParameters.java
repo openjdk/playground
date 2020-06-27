@@ -197,7 +197,7 @@ public final class OAEPParameters extends AlgorithmParametersSpi {
             throw new IOException("AlgorithmId " +
                     mgfSpec.getDigestAlgorithm() + " impl not found");
         }
-        mgfDigestId.encode(tmp2);
+        mgfDigestId.derEncode(tmp2);
         tmp3 = new DerOutputStream();
         tmp3.write(DerValue.tag_Sequence, tmp2);
         tmp.write(DerValue.createTag(DerValue.TAG_CONTEXT, true, (byte)1),

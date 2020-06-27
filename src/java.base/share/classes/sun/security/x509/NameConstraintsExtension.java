@@ -113,7 +113,7 @@ implements CertAttrSet<String>, Cloneable {
     }
 
     // Encode this extension value.
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         minMaxValid = false;
         if (permitted == null && excluded == null) {
             this.extensionValue = null;
@@ -236,15 +236,14 @@ implements CertAttrSet<String>, Cloneable {
      * @param out the OutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (this.extensionValue == null) {
             this.extensionId = PKIXExtensions.NameConstraints_Id;
             this.critical = true;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

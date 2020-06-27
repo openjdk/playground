@@ -208,18 +208,13 @@ public class PKCS8Key implements PrivateKey {
      */
     private void encode() throws InvalidKeyException {
         if (encodedKey == null) {
-            try {
-                DerOutputStream out = new DerOutputStream ();
-                DerOutputStream tmp = new DerOutputStream();
-                tmp.putInteger(V1);
-                algid.encode(tmp);
-                tmp.putOctetString(key);
-                out.write(DerValue.tag_Sequence, tmp);
-                encodedKey = out.toByteArray();
-            } catch (IOException e) {
-                throw new InvalidKeyException ("IOException : " +
-                                               e.getMessage());
-            }
+            DerOutputStream out = new DerOutputStream();
+            DerOutputStream tmp = new DerOutputStream();
+            tmp.putInteger(V1);
+            algid.derEncode(tmp);
+            tmp.putOctetString(key);
+            out.write(DerValue.tag_Sequence, tmp);
+            encodedKey = out.toByteArray();
         }
     }
 

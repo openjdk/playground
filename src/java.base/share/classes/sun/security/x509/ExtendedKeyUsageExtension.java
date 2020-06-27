@@ -98,7 +98,7 @@ implements CertAttrSet<String> {
     private Vector<ObjectIdentifier> keyUsages;
 
     // Encode this extension value.
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (keyUsages == null || keyUsages.isEmpty()) {
             this.extensionValue = null;
             return;
@@ -197,15 +197,14 @@ implements CertAttrSet<String> {
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (extensionValue == null) {
           extensionId = PKIXExtensions.ExtendedKeyUsage_Id;
           critical = false;
           encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

@@ -471,8 +471,8 @@ public class X509Key implements PublicKey {
     static void encode(DerOutputStream out, AlgorithmId algid, BitArray key)
         throws IOException {
             DerOutputStream tmp = new DerOutputStream();
-            algid.encode(tmp);
-            tmp.putUnalignedBitString(key);
+        algid.derEncode(tmp);
+        tmp.putUnalignedBitString(key);
             out.write(DerValue.tag_Sequence, tmp);
     }
 }

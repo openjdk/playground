@@ -46,7 +46,7 @@ public class AVAEqualsHashCode {
         DerOutputStream deros = new DerOutputStream();
         ObjectIdentifier oid = ObjectIdentifier.of("1.2.840.113549.2.5");
 
-        dn.encode(deros);
+        dn.derEncode(deros);
         byte[] ba = deros.toByteArray();
         DerValue dv = new DerValue(ba);
 

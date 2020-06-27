@@ -59,11 +59,7 @@ public final class NamedCurve extends ECParameterSpec {
         this.oid = ko.value();
 
         DerOutputStream out = new DerOutputStream();
-        try {
-            out.putOID(ObjectIdentifier.of(ko));
-        } catch (IOException e) {
-            throw new RuntimeException("Internal error", e);
-        }
+        out.putOID(ObjectIdentifier.of(ko));
         encoded = out.toByteArray();
     }
 

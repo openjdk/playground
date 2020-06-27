@@ -93,7 +93,8 @@ public class FreshestCRLExtension extends CRLDistributionPointsExtension {
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
+    @Override
+    public void encode(DerOutputStream out) {
         super.encode(out, PKIXExtensions.FreshestCRL_Id, false);
     }
 }

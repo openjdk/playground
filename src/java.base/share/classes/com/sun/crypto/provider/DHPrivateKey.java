@@ -204,46 +204,42 @@ javax.crypto.interfaces.DHPrivateKey, Serializable {
      */
     public synchronized byte[] getEncoded() {
         if (this.encodedKey == null) {
-            try {
-                DerOutputStream tmp = new DerOutputStream();
+            DerOutputStream tmp = new DerOutputStream();
 
-                //
-                // version
-                //
-                tmp.putInteger(PKCS8_VERSION);
+            //
+            // version
+            //
+            tmp.putInteger(PKCS8_VERSION);
 
-                //
-                // privateKeyAlgorithm
-                //
-                DerOutputStream algid = new DerOutputStream();
+            //
+            // privateKeyAlgorithm
+            //
+            DerOutputStream algid = new DerOutputStream();
 
-                // store OID
-                algid.putOID(DHPublicKey.DH_OID);
-                // encode parameters
-                DerOutputStream params = new DerOutputStream();
-                params.putInteger(this.p);
-                params.putInteger(this.g);
-                if (this.l != 0) {
-                    params.putInteger(this.l);
-                }
-                // wrap parameters into SEQUENCE
-                DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
-                                                      params.toByteArray());
-                // store parameter SEQUENCE in algid
-                algid.putDerValue(paramSequence);
-                // wrap algid into SEQUENCE
-                tmp.write(DerValue.tag_Sequence, algid);
-
-                // privateKey
-                tmp.putOctetString(this.key);
-
-                // make it a SEQUENCE
-                DerOutputStream derKey = new DerOutputStream();
-                derKey.write(DerValue.tag_Sequence, tmp);
-                this.encodedKey = derKey.toByteArray();
-            } catch (IOException e) {
-                return null;
+            // store OID
+            algid.putOID(DHPublicKey.DH_OID);
+            // encode parameters
+            DerOutputStream params = new DerOutputStream();
+            params.putInteger(this.p);
+            params.putInteger(this.g);
+            if (this.l != 0) {
+                params.putInteger(this.l);
             }
+            // wrap parameters into SEQUENCE
+            DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
+                    params.toByteArray());
+            // store parameter SEQUENCE in algid
+            algid.putDerValue(paramSequence);
+            // wrap algid into SEQUENCE
+            tmp.write(DerValue.tag_Sequence, algid);
+
+            // privateKey
+            tmp.putOctetString(this.key);
+
+            // make it a SEQUENCE
+            DerOutputStream derKey = new DerOutputStream();
+            derKey.write(DerValue.tag_Sequence, tmp);
+            this.encodedKey = derKey.toByteArray();
         }
         return this.encodedKey.clone();
     }

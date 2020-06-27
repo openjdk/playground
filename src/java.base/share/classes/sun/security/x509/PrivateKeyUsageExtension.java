@@ -81,7 +81,7 @@ implements CertAttrSet<String> {
     private Date        notAfter = null;
 
     // Encode this extension value.
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (notBefore == null && notAfter == null) {
             this.extensionValue = null;
             return;
@@ -240,15 +240,14 @@ implements CertAttrSet<String> {
      * @param out the OutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (extensionValue == null) {
             extensionId = PKIXExtensions.PrivateKeyUsage_Id;
             critical = false;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

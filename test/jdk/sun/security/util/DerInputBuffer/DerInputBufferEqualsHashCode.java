@@ -48,7 +48,7 @@ public class DerInputBufferEqualsHashCode {
         X500Name dn1 = new X500Name(name1);
 
         deros = new DerOutputStream();
-        dn1.encode(deros);
+        dn1.derEncode(deros);
         ba = deros.toByteArray();
 
         GetDIBConstructor a = new GetDIBConstructor();

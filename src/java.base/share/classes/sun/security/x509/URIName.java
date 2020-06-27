@@ -199,7 +199,8 @@ public class URIName implements GeneralNameInterface {
      * @param out the DER stream to encode the URIName to.
      * @exception IOException on encoding errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void derEncode(DerOutputStream out) {
         out.putIA5String(uri.toASCIIString());
     }
 

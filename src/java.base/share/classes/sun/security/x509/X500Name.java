@@ -807,7 +807,7 @@ public class X500Name implements GeneralNameInterface, Principal {
      */
     @Deprecated
     public void emit(DerOutputStream out) throws IOException {
-        encode(out);
+        derEncode(out);
     }
 
     /**
@@ -815,10 +815,11 @@ public class X500Name implements GeneralNameInterface, Principal {
      *
      * @param out where to put the DER-encoded X.500 name
      */
-    public void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void derEncode(DerOutputStream out) {
         DerOutputStream tmp = new DerOutputStream();
         for (int i = 0; i < names.length; i++) {
-            names[i].encode(tmp);
+            names[i].derEncode(tmp);
         }
         out.write(DerValue.tag_Sequence, tmp);
     }
@@ -833,7 +834,7 @@ public class X500Name implements GeneralNameInterface, Principal {
             DerOutputStream     out = new DerOutputStream();
             DerOutputStream     tmp = new DerOutputStream();
             for (int i = 0; i < names.length; i++) {
-                names[i].encode(tmp);
+                names[i].derEncode(tmp);
             }
             out.write(DerValue.tag_Sequence, tmp);
             encoded = out.toByteArray();

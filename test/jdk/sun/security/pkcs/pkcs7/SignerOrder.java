@@ -115,7 +115,7 @@ public class SignerOrder {
     }
 
     static void printSignerInfos(SignerInfo signerInfo) throws IOException {
-        ByteArrayOutputStream strm = new ByteArrayOutputStream();
+        DerOutputStream strm = new DerOutputStream();
         signerInfo.derEncode(strm);
         System.out.println("SignerInfo, length: "
                 + strm.toByteArray().length);
@@ -125,7 +125,7 @@ public class SignerOrder {
     }
 
     static void printSignerInfos(SignerInfo[] signerInfos) throws IOException {
-        ByteArrayOutputStream strm = new ByteArrayOutputStream();
+        DerOutputStream strm = new DerOutputStream();
         for (int i = 0; i < signerInfos.length; i++) {
             signerInfos[i].derEncode(strm);
             System.out.println("SignerInfo[" + i + "], length: "

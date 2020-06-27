@@ -41,7 +41,8 @@ import sun.util.calendar.CalendarSystem;
  *
  * @author David Brownell
  */
-class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
+class DerInputBuffer extends ByteArrayInputStream
+        implements Cloneable, DerEncoder {
 
     boolean allowBER = true;
 
@@ -72,8 +73,9 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
 
     byte[] toByteArray() {
         int     len = available();
-        if (len <= 0)
+        if (len <= 0) {
             return null;
+        }
         byte[]  retval = new byte[len];
 
         System.arraycopy(buf, pos, retval, 0, len);
@@ -81,10 +83,11 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
     }
 
     int peek() throws IOException {
-        if (pos >= count)
+        if (pos >= count) {
             throw new IOException("out of data");
-        else
+        } else {
             return buf[pos];
+        }
     }
 
     /**
@@ -92,19 +95,22 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
      * object.
      */
     public boolean equals(Object other) {
-        if (other instanceof DerInputBuffer)
-            return equals((DerInputBuffer)other);
-        else
+        if (other instanceof DerInputBuffer) {
+            return equals((DerInputBuffer) other);
+        } else {
             return false;
+        }
     }
 
     boolean equals(DerInputBuffer other) {
-        if (this == other)
+        if (this == other) {
             return true;
+        }
 
         int max = this.available();
-        if (other.available() != max)
+        if (other.available() != max) {
             return false;
+        }
         for (int i = 0; i < max; i++) {
             if (this.buf[this.pos + i] != other.buf[other.pos + i]) {
                 return false;
@@ -124,14 +130,16 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
         int len = available();
         int p = pos;
 
-        for (int i = 0; i < len; i++)
+        for (int i = 0; i < len; i++) {
             retval += buf[p + i] * i;
+        }
         return retval;
     }
 
     void truncate(int len) throws IOException {
-        if (len > available())
+        if (len > available()) {
             throw new IOException("insufficient data");
+        }
         count = pos + len;
     }
 
@@ -144,9 +152,9 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
      * @return the integer as a BigInteger.
      */
     BigInteger getBigInteger(int len, boolean makePositive) throws IOException {
-        if (len > available())
+        if (len > available()) {
             throw new IOException("short read of integer");
-
+        }
         if (len == 0) {
             throw new IOException("Invalid encoding: zero length Int value");
         }
@@ -194,9 +202,9 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
      * number of bytes in this buffer.
      */
     public byte[] getBitString(int len) throws IOException {
-        if (len > available())
+        if (len > available()) {
             throw new IOException("short read of bit string");
-
+        }
         if (len == 0) {
             throw new IOException("Invalid encoding: zero length bit string");
         }
@@ -228,8 +236,9 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
      * The bit string need not be byte-aligned.
      */
     BitArray getUnalignedBitString() throws IOException {
-        if (pos >= count)
+        if (pos >= count) {
             return null;
+        }
         /*
          * Just copy the data into an aligned, padded octet buffer,
          * and consume the rest of the buffer.
@@ -256,12 +265,12 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
      * @param len the number of bytes to use
      */
     public Date getUTCTime(int len) throws IOException {
-        if (len > available())
+        if (len > available()) {
             throw new IOException("short read of DER UTC Time");
-
-        if (len < 11 || len > 17)
+        }
+        if (len < 11 || len > 17) {
             throw new IOException("DER UTC Time length error");
-
+        }
         return getTime(len, false);
     }
 
@@ -271,12 +280,12 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
      * @param len the number of bytes to use
      */
     public Date getGeneralizedTime(int len) throws IOException {
-        if (len > available())
+        if (len > available()) {
             throw new IOException("short read of DER Generalized Time");
-
-        if (len < 13)
+        }
+        if (len < 13) {
             throw new IOException("DER Generalized Time length error");
-
+        }
         return getTime(len, true);
 
     }
@@ -322,10 +331,11 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
             year = 10 * Character.digit((char)buf[pos++], 10);
             year += Character.digit((char)buf[pos++], 10);
 
-            if (year < 50)              // origin 2000
+            if (year < 50) {             // origin 2000
                 year += 2000;
-            else
+            } else {
                 year += 1900;   // origin 1900
+            }
         }
 
         month = 10 * Character.digit((char)buf[pos++], 10);
@@ -388,8 +398,8 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
             second = 0;
 
         if (month == 0 || day == 0
-            || month > 12 || day > 31
-            || hour >= 24 || minute >= 60 || second >= 60)
+                || month > 12 || day > 31
+                || hour >= 24 || minute >= 60 || second >= 60)
             throw new IOException("Parse " + type + " time, invalid format");
 
         /*
@@ -405,8 +415,9 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
         /*
          * Finally, "Z" or "+hhmm" or "-hhmm" ... offsets change hhmm
          */
-        if (! (len == 1 || len == 5))
+        if (! (len == 1 || len == 5)) {
             throw new IOException("Parse " + type + " time, invalid offset");
+        }
 
         int hr, min;
 
@@ -417,9 +428,9 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
             min = 10 * Character.digit((char)buf[pos++], 10);
             min += Character.digit((char)buf[pos++], 10);
 
-            if (hr >= 24 || min >= 60)
+            if (hr >= 24 || min >= 60) {
                 throw new IOException("Parse " + type + " time, +hhmm");
-
+            }
             time -= ((hr * 60) + min) * 60 * 1000;
             break;
 
@@ -429,9 +440,9 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
             min = 10 * Character.digit((char)buf[pos++], 10);
             min += Character.digit((char)buf[pos++], 10);
 
-            if (hr >= 24 || min >= 60)
+            if (hr >= 24 || min >= 60) {
                 throw new IOException("Parse " + type + " time, -hhmm");
-
+            }
             time += ((hr * 60) + min) * 60 * 1000;
             break;
 
@@ -442,5 +453,10 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
             throw new IOException("Parse " + type + " time, garbage offset");
         }
         return new Date(time);
+    }
+
+    @Override
+    public void derEncode(DerOutputStream out) {
+        out.write(buf, pos, count);
     }
 }

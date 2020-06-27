@@ -105,11 +105,9 @@ public class CertificateAlgorithmId implements CertAttrSet<String> {
      * @param out the DerOutputStream to marshal the contents to.
      * @exception IOException on errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
-        algId.encode(tmp);
-
-        out.write(tmp.toByteArray());
+    @Override
+    public void encode(DerOutputStream out) {
+        algId.derEncode(out);
     }
 
     /**

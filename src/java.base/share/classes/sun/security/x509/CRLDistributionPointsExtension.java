@@ -199,7 +199,8 @@ public class CRLDistributionPointsExtension extends Extension
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
+    @Override
+    public void encode(DerOutputStream out) {
         encode(out, PKIXExtensions.CRLDistributionPoints_Id, false);
     }
 
@@ -207,8 +208,8 @@ public class CRLDistributionPointsExtension extends Extension
      * Write the extension to the DerOutputStream.
      * (Also called by the subclass)
      */
-    protected void encode(OutputStream out, ObjectIdentifier extensionId,
-        boolean isCritical) throws IOException {
+    protected void encode(DerOutputStream out, ObjectIdentifier extensionId,
+        boolean isCritical) {
 
         DerOutputStream tmp = new DerOutputStream();
         if (this.extensionValue == null) {
@@ -277,7 +278,7 @@ public class CRLDistributionPointsExtension extends Extension
     }
 
      // Encode this extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (distributionPoints.isEmpty()) {
             this.extensionValue = null;
         } else {

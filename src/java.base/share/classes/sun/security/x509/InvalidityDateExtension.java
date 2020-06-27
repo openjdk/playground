@@ -68,7 +68,7 @@ public class InvalidityDateExtension extends Extension
 
     private Date date;
 
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (date == null) {
             this.extensionValue = null;
             return;
@@ -177,16 +177,14 @@ public class InvalidityDateExtension extends Extension
      * @param out the DerOutputStream to write the extension to
      * @exception IOException on encoding errors
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream  tmp = new DerOutputStream();
-
+    @Override
+    public void encode(DerOutputStream out) {
         if (this.extensionValue == null) {
             this.extensionId = PKIXExtensions.InvalidityDate_Id;
             this.critical = false;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

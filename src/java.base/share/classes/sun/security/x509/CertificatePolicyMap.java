@@ -96,7 +96,7 @@ public class CertificatePolicyMap {
      * @param out the DerOutputStream to write the object to.
      * @exception IOException on errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         DerOutputStream tmp = new DerOutputStream();
 
         issuerDomain.encode(tmp);

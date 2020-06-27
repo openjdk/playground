@@ -26,7 +26,6 @@
 package sun.security.util;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * Interface to an object that knows how to write its own DER
@@ -41,7 +40,6 @@ public interface DerEncoder {
      *
      * @param out  the stream on which the DER encoding is written.
      */
-    public void derEncode(OutputStream out)
-        throws IOException;
+    void derEncode(DerOutputStream out);
 
 }

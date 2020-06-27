@@ -100,11 +100,9 @@ public class CertificateX509Key implements CertAttrSet<String> {
      * @param out the OutputStream to marshal the contents to.
      * @exception IOException on errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
-        tmp.write(key.getEncoded());
-
-        out.write(tmp.toByteArray());
+    @Override
+    public void encode(DerOutputStream out) {
+        out.write(key.getEncoded());
     }
 
     /**

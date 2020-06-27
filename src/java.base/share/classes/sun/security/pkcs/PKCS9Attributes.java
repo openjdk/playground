@@ -234,7 +234,7 @@ public class PKCS9Attributes {
      *
      * @exception IOException  on output error.
      */
-    public void encode(byte tag, OutputStream out) throws IOException {
+    public void encode(byte tag, DerOutputStream out) {
         out.write(tag);
         out.write(derEncoding, 1, derEncoding.length -1);
     }

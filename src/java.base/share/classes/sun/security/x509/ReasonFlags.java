@@ -240,7 +240,7 @@ public class ReasonFlags {
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         out.putTruncatedUnalignedBitString(new BitArray(this.bitString));
     }
 

@@ -145,13 +145,6 @@ public class AlgorithmId implements Serializable, DerEncoder {
     }
 
     /**
-     * Marshal a DER-encoded "AlgorithmID" sequence on the DER stream.
-     */
-    public final void encode(DerOutputStream out) throws IOException {
-        derEncode(out);
-    }
-
-    /**
      * DER encode this object onto an output stream.
      * Implements the <code>DerEncoder</code> interface.
      *
@@ -160,7 +153,8 @@ public class AlgorithmId implements Serializable, DerEncoder {
      *
      * @exception IOException on encoding error.
      */
-    public void derEncode (OutputStream out) throws IOException {
+    @Override
+    public void derEncode (DerOutputStream out) {
         DerOutputStream bytes = new DerOutputStream();
         DerOutputStream tmp = new DerOutputStream();
 
@@ -168,7 +162,12 @@ public class AlgorithmId implements Serializable, DerEncoder {
         // Setup params from algParams since no DER encoding is given
         if (constructedFromDer == false) {
             if (algParams != null) {
-                params = new DerValue(algParams.getEncoded());
+                // algParams should always have been initialized?
+                try {
+                    params = new DerValue(algParams.getEncoded());
+                } catch (IOException e) {
+                    throw new AssertionError(e);
+                }
             } else {
                 params = null;
             }

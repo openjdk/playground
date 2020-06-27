@@ -332,7 +332,7 @@ public final class ObjectIdentifier implements Serializable {
     /*
      * n.b. the only public interface is DerOutputStream.putOID()
      */
-    void encode(DerOutputStream out) throws IOException {
+    void encode(DerOutputStream out) {
         out.write (DerValue.tag_ObjectId, encoding);
     }
 

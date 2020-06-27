@@ -132,7 +132,7 @@ public class GeneralSubtrees implements Cloneable {
      *
      * @param out the DerOutputStrean to encode this object to.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         DerOutputStream seq = new DerOutputStream();
 
         for (int i = 0, n = size(); i < n; i++) {

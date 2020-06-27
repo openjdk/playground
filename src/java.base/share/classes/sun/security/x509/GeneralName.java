@@ -233,9 +233,9 @@ public class GeneralName {
      * @param out the DerOutputStream to encode the GeneralName to.
      * @exception IOException on encoding errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         DerOutputStream tmp = new DerOutputStream();
-        name.encode(tmp);
+        name.derEncode(tmp);
         int nameType = name.getType();
         if (nameType == GeneralNameInterface.NAME_ANY ||
             nameType == GeneralNameInterface.NAME_X400 ||

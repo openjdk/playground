@@ -281,10 +281,10 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
 
             if (version != 0) // v2 crl encode version
                 tmp.putInteger(version);
-            infoSigAlgId.encode(tmp);
+            infoSigAlgId.derEncode(tmp);
             if ((version == 0) && (issuer.toString() == null))
                 throw new CRLException("Null Issuer DN not allowed in v1 CRL");
-            issuer.encode(tmp);
+            issuer.derEncode(tmp);
 
             if (thisUpdate.getTime() < CertificateValidity.YR_2050)
                 tmp.putUTCTime(thisUpdate);
@@ -485,56 +485,51 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
      * @exception CRLException if any mandatory data was omitted.
      */
     public void sign(PrivateKey key, String algorithm, String provider)
-    throws CRLException, NoSuchAlgorithmException, InvalidKeyException,
-        NoSuchProviderException, SignatureException {
+            throws CRLException, NoSuchAlgorithmException, InvalidKeyException,
+            NoSuchProviderException, SignatureException {
+        if (readOnly)
+            throw new CRLException("cannot over-write existing CRL");
+        Signature sigEngine = null;
+        if (provider == null || provider.isEmpty())
+            sigEngine = Signature.getInstance(algorithm);
+        else
+            sigEngine = Signature.getInstance(algorithm, provider);
+
+        AlgorithmParameterSpec params = AlgorithmId
+                .getDefaultAlgorithmParameterSpec(algorithm, key);
         try {
-            if (readOnly)
-                throw new CRLException("cannot over-write existing CRL");
-            Signature sigEngine = null;
-            if (provider == null || provider.isEmpty())
-                sigEngine = Signature.getInstance(algorithm);
-            else
-                sigEngine = Signature.getInstance(algorithm, provider);
-
-            AlgorithmParameterSpec params = AlgorithmId
-                    .getDefaultAlgorithmParameterSpec(algorithm, key);
-            try {
-                SignatureUtil.initSignWithParam(sigEngine, key, params, null);
-            } catch (InvalidAlgorithmParameterException e) {
-                throw new SignatureException(e);
-            }
-
-            if (params != null) {
-                sigAlgId = AlgorithmId.get(sigEngine.getParameters());
-            } else {
-                // in case the name is reset
-                sigAlgId = AlgorithmId.get(sigEngine.getAlgorithm());
-            }
-            infoSigAlgId = sigAlgId;
-
-            DerOutputStream out = new DerOutputStream();
-            DerOutputStream tmp = new DerOutputStream();
-
-            // encode crl info
-            encodeInfo(tmp);
-
-            // encode algorithm identifier
-            sigAlgId.encode(tmp);
-
-            // Create and encode the signature itself.
-            sigEngine.update(tbsCertList, 0, tbsCertList.length);
-            signature = sigEngine.sign();
-            tmp.putBitString(signature);
-
-            // Wrap the signed data in a SEQUENCE { data, algorithm, sig }
-            out.write(DerValue.tag_Sequence, tmp);
-            signedCRL = out.toByteArray();
-            readOnly = true;
-
-        } catch (IOException e) {
-            throw new CRLException("Error while encoding data: " +
-                                   e.getMessage());
+            SignatureUtil.initSignWithParam(sigEngine, key, params, null);
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new SignatureException(e);
         }
+
+        if (params != null) {
+            sigAlgId = AlgorithmId.get(sigEngine.getParameters());
+        } else {
+            // in case the name is reset
+            sigAlgId = AlgorithmId.get(sigEngine.getAlgorithm());
+        }
+        infoSigAlgId = sigAlgId;
+
+        DerOutputStream out = new DerOutputStream();
+        DerOutputStream tmp = new DerOutputStream();
+
+        // encode crl info
+        encodeInfo(tmp);
+
+        // encode algorithm identifier
+        sigAlgId.derEncode(tmp);
+
+        // Create and encode the signature itself.
+        sigEngine.update(tbsCertList, 0, tbsCertList.length);
+        signature = sigEngine.sign();
+        tmp.putBitString(signature);
+
+        // Wrap the signed data in a SEQUENCE { data, algorithm, sig }
+        out.write(DerValue.tag_Sequence, tmp);
+        signedCRL = out.toByteArray();
+        readOnly = true;
+
     }
 
     /**
@@ -1285,9 +1280,10 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
     }
 
     @Override
-    public void derEncode(OutputStream out) throws IOException {
-        if (signedCRL == null)
-            throw new IOException("Null CRL to encode");
+    public void derEncode(DerOutputStream out) {
+        if (signedCRL == null) {
+            throw new IllegalStateException("Null CRL to encode");
+        }
         out.write(signedCRL.clone());
     }
 

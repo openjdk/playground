@@ -289,31 +289,25 @@ public class X509CertPath extends CertPath {
     private byte[] encodePKIPATH() throws CertificateEncodingException {
 
         ListIterator<X509Certificate> li = certs.listIterator(certs.size());
-        try {
-            DerOutputStream bytes = new DerOutputStream();
-            // encode certs in reverse order (trust anchor to target)
-            // according to PkiPath format
-            while (li.hasPrevious()) {
-                X509Certificate cert = li.previous();
-                // check for duplicate cert
-                if (certs.lastIndexOf(cert) != certs.indexOf(cert)) {
-                    throw new CertificateEncodingException
-                        ("Duplicate Certificate");
-                }
-                // get encoded certificates
-                byte[] encoded = cert.getEncoded();
-                bytes.write(encoded);
+        DerOutputStream bytes = new DerOutputStream();
+        // encode certs in reverse order (trust anchor to target)
+        // according to PkiPath format
+        while (li.hasPrevious()) {
+            X509Certificate cert = li.previous();
+            // check for duplicate cert
+            if (certs.lastIndexOf(cert) != certs.indexOf(cert)) {
+                throw new CertificateEncodingException
+                    ("Duplicate Certificate");
             }
-
-            // Wrap the data in a SEQUENCE
-            DerOutputStream derout = new DerOutputStream();
-            derout.write(DerValue.tag_SequenceOf, bytes);
-            return derout.toByteArray();
-
-        } catch (IOException ioe) {
-           throw new CertificateEncodingException("IOException encoding " +
-                   "PkiPath data: " + ioe, ioe);
+            // get encoded certificates
+            byte[] encoded = cert.getEncoded();
+            bytes.write(encoded);
         }
+
+        // Wrap the data in a SEQUENCE
+        DerOutputStream derout = new DerOutputStream();
+        derout.write(DerValue.tag_SequenceOf, bytes);
+        return derout.toByteArray();
     }
 
     /**

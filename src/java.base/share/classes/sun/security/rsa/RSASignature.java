@@ -236,7 +236,7 @@ public abstract class RSASignature extends SignatureSpi {
     public static byte[] encodeSignature(ObjectIdentifier oid, byte[] digest)
             throws IOException {
         DerOutputStream out = new DerOutputStream();
-        new AlgorithmId(oid).encode(out);
+        new AlgorithmId(oid).derEncode(out);
         out.putOctetString(digest);
         DerValue result =
             new DerValue(DerValue.tag_Sequence, out.toByteArray());

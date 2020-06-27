@@ -107,11 +107,9 @@ public class CertificateIssuerName implements CertAttrSet<String> {
      * @param out the DerOutputStream to marshal the contents to.
      * @exception IOException on errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
-        dnName.encode(tmp);
-
-        out.write(tmp.toByteArray());
+    @Override
+    public void encode(DerOutputStream out) {
+        dnName.derEncode(out);
     }
 
     /**

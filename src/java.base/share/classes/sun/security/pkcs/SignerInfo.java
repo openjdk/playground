@@ -25,7 +25,6 @@
 
 package sun.security.pkcs;
 
-import java.io.OutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.cert.CertPathValidatorException;
@@ -197,11 +196,6 @@ public class SignerInfo implements DerEncoder {
         }
     }
 
-    public void encode(DerOutputStream out) throws IOException {
-
-        derEncode(out);
-    }
-
     /**
      * DER encode this object onto an output stream.
      * Implements the {@code DerEncoder} interface.
@@ -211,21 +205,22 @@ public class SignerInfo implements DerEncoder {
      *
      * @exception IOException on encoding error.
      */
-    public void derEncode(OutputStream out) throws IOException {
+    @Override
+    public void derEncode(DerOutputStream out) {
         DerOutputStream seq = new DerOutputStream();
         seq.putInteger(version);
         DerOutputStream issuerAndSerialNumber = new DerOutputStream();
-        issuerName.encode(issuerAndSerialNumber);
+        issuerName.derEncode(issuerAndSerialNumber);
         issuerAndSerialNumber.putInteger(certificateSerialNumber);
         seq.write(DerValue.tag_Sequence, issuerAndSerialNumber);
 
-        digestAlgorithmId.encode(seq);
+        digestAlgorithmId.derEncode(seq);
 
         // encode authenticated attributes if there are any
         if (authenticatedAttributes != null)
             authenticatedAttributes.encode((byte)0xA0, seq);
 
-        digestEncryptionAlgorithmId.encode(seq);
+        digestEncryptionAlgorithmId.derEncode(seq);
 
         seq.putOctetString(encryptedDigest);
 

@@ -67,7 +67,7 @@ implements CertAttrSet<String> {
     private List<CertificatePolicyMap> maps;
 
     // Encode this extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (maps == null || maps.isEmpty()) {
             this.extensionValue = null;
             return;
@@ -149,15 +149,14 @@ implements CertAttrSet<String> {
      * @param out the OutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (extensionValue == null) {
             extensionId = PKIXExtensions.PolicyMappings_Id;
             critical = true;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

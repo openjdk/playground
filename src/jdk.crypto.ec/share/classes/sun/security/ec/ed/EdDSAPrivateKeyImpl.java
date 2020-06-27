@@ -52,12 +52,8 @@ public final class EdDSAPrivateKeyImpl
         this.h = h.clone();
 
         DerOutputStream derKey = new DerOutputStream();
-        try {
-            derKey.putOctetString(h);
-            this.key = derKey.toByteArray();
-        } catch (IOException ex) {
-            throw new AssertionError("Should not happen", ex);
-        }
+        derKey.putOctetString(h);
+        this.key = derKey.toByteArray();
         checkLength(params);
     }
 

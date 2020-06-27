@@ -277,7 +277,7 @@ public class DistributionPoint {
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on error.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    public void encode(DerOutputStream out) {
         DerOutputStream tagged = new DerOutputStream();
 
         // NOTE: only one of pointNames and pointRDN can be set
@@ -291,7 +291,7 @@ public class DistributionPoint {
                     derOut);
             } else if (relativeName != null) {
                 DerOutputStream derOut = new DerOutputStream();
-                relativeName.encode(derOut);
+                relativeName.derEncode(derOut);
                 distributionPoint.writeImplicit(
                     DerValue.createTag(DerValue.TAG_CONTEXT, true, TAG_REL_NAME),
                     derOut);

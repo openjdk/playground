@@ -201,39 +201,35 @@ javax.crypto.interfaces.DHPublicKey, Serializable {
      */
     public synchronized byte[] getEncoded() {
         if (this.encodedKey == null) {
-            try {
-                DerOutputStream algid = new DerOutputStream();
+            DerOutputStream algid = new DerOutputStream();
 
-                // store oid in algid
-                algid.putOID(DH_OID);
+            // store oid in algid
+            algid.putOID(DH_OID);
 
-                // encode parameters
-                DerOutputStream params = new DerOutputStream();
-                params.putInteger(this.p);
-                params.putInteger(this.g);
-                if (this.l != 0) {
-                    params.putInteger(this.l);
-                }
-                // wrap parameters into SEQUENCE
-                DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
-                                                      params.toByteArray());
-                // store parameter SEQUENCE in algid
-                algid.putDerValue(paramSequence);
-
-                // wrap algid into SEQUENCE, and store it in key encoding
-                DerOutputStream tmpDerKey = new DerOutputStream();
-                tmpDerKey.write(DerValue.tag_Sequence, algid);
-
-                // store key data
-                tmpDerKey.putBitString(this.key);
-
-                // wrap algid and key into SEQUENCE
-                DerOutputStream derKey = new DerOutputStream();
-                derKey.write(DerValue.tag_Sequence, tmpDerKey);
-                this.encodedKey = derKey.toByteArray();
-            } catch (IOException e) {
-                return null;
+            // encode parameters
+            DerOutputStream params = new DerOutputStream();
+            params.putInteger(this.p);
+            params.putInteger(this.g);
+            if (this.l != 0) {
+                params.putInteger(this.l);
             }
+            // wrap parameters into SEQUENCE
+            DerValue paramSequence = new DerValue(DerValue.tag_Sequence,
+                    params.toByteArray());
+            // store parameter SEQUENCE in algid
+            algid.putDerValue(paramSequence);
+
+            // wrap algid into SEQUENCE, and store it in key encoding
+            DerOutputStream tmpDerKey = new DerOutputStream();
+            tmpDerKey.write(DerValue.tag_Sequence, algid);
+
+            // store key data
+            tmpDerKey.putBitString(this.key);
+
+            // wrap algid and key into SEQUENCE
+            DerOutputStream derKey = new DerOutputStream();
+            derKey.write(DerValue.tag_Sequence, tmpDerKey);
+            this.encodedKey = derKey.toByteArray();
         }
         return this.encodedKey.clone();
     }

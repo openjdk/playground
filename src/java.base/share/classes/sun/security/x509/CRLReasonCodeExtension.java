@@ -53,7 +53,7 @@ public class CRLReasonCodeExtension extends Extension
 
     private int reasonCode = 0;
 
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (reasonCode == 0) {
             this.extensionValue = null;
             return;
@@ -158,16 +158,14 @@ public class CRLReasonCodeExtension extends Extension
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream  tmp = new DerOutputStream();
-
+    @Override
+    public void encode(DerOutputStream out) {
         if (this.extensionValue == null) {
             this.extensionId = PKIXExtensions.ReasonCode_Id;
             this.critical = false;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

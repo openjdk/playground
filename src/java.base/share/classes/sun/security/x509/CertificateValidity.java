@@ -147,12 +147,13 @@ public class CertificateValidity implements CertAttrSet<String> {
      * @param out the OutputStream to marshal the contents to.
      * @exception IOException on errors.
      */
-    public void encode(OutputStream out) throws IOException {
+    @Override
+    public void encode(DerOutputStream out) throws CertificateException {
 
         // in cases where default constructor is used check for
         // null values
         if (notBefore == null || notAfter == null) {
-            throw new IOException("CertAttrSet:CertificateValidity:" +
+            throw new CertificateException("CertAttrSet:CertificateValidity:" +
                                   " null values to encode.\n");
         }
         DerOutputStream pair = new DerOutputStream();
@@ -167,10 +168,7 @@ public class CertificateValidity implements CertAttrSet<String> {
         } else {
             pair.putGeneralizedTime(notAfter);
         }
-        DerOutputStream seq = new DerOutputStream();
-        seq.write(DerValue.tag_Sequence, pair);
-
-        out.write(seq.toByteArray());
+        out.write(DerValue.tag_Sequence, pair);
     }
 
     /**

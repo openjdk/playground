@@ -47,7 +47,7 @@ public class DerValueConstructor {
         X500Name dn = new X500Name(name);
         System.err.println("DEBUG: dn: " + dn.toString());
         debugDER = new DerOutputStream();
-        dn.encode(debugDER);
+        dn.derEncode(debugDER);
         ba = debugDER.toByteArray();
         System.err.print("DEBUG: encoded X500Name bytes: ");
         System.out.println(toHexString(ba));

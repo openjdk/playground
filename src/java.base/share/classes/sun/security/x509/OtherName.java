@@ -149,10 +149,11 @@ public class OtherName implements GeneralNameInterface {
      * @param out the DER stream to encode the Other-Name to.
      * @exception IOException on encoding errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void derEncode(DerOutputStream out) {
         if (gni != null) {
             // This OtherName has a supported class
-            gni.encode(out);
+            gni.derEncode(out);
             return;
         } else {
             // This OtherName has no supporting class

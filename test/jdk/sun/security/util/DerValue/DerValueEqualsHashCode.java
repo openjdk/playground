@@ -47,7 +47,7 @@ public class DerValueEqualsHashCode {
         //
         // get busy
         deros = new DerOutputStream();
-        dn.encode(deros);
+        dn.derEncode(deros);
         ba = deros.toByteArray();
 
         DerValue dv1 = new DerValue(ba);

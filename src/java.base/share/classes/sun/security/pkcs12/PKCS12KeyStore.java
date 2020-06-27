@@ -641,7 +641,7 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
                 DerOutputStream secretKeyInfo = new DerOutputStream();
                 secretKeyInfo.putInteger(0);
                 AlgorithmId algId = AlgorithmId.get(key.getAlgorithm());
-                algId.encode(secretKeyInfo);
+                algId.derEncode(secretKeyInfo);
                 secretKeyInfo.putOctetString(key.getEncoded());
                 pkcs8.write(DerValue.tag_Sequence, secretKeyInfo);
 
@@ -1890,7 +1890,7 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
                     mapPBEAlgorithmToOID(certProtectionAlgorithm),
                     cipher.getParameters());
                     // cipher.getParameters() now has IV
-            algId.encode(bytes);
+            algId.derEncode(bytes);
             byte[] encodedAlgId = bytes.toByteArray();
 
             if (debug != null) {

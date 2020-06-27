@@ -175,7 +175,7 @@ class MacData {
         DerOutputStream tmp2 = new DerOutputStream();
         // encode encryption algorithm
         AlgorithmId algid = AlgorithmId.get(digestAlgorithmName);
-        algid.encode(tmp2);
+        algid.derEncode(tmp2);
 
         // encode digest data
         tmp2.putOctetString(digest);

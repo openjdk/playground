@@ -25,6 +25,8 @@
 
 package sun.security.x509;
 
+import sun.security.util.DerOutputStream;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.cert.CertificateException;
@@ -63,8 +65,7 @@ public interface CertAttrSet<T> {
      * @exception CertificateException on encoding or validity errors.
      * @exception IOException on other errors.
      */
-    void encode(OutputStream out)
-        throws CertificateException, IOException;
+    void encode(DerOutputStream out) throws CertificateException;
 
     /**
      * Sets an attribute value within this CertAttrSet.

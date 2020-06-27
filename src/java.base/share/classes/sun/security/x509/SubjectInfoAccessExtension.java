@@ -154,15 +154,14 @@ public class SubjectInfoAccessExtension extends Extension
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (this.extensionValue == null) {
             this.extensionId = PKIXExtensions.SubjectInfoAccess_Id;
             this.critical = false;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**
@@ -222,7 +221,7 @@ public class SubjectInfoAccessExtension extends Extension
     }
 
      // Encode this extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (accessDescriptions.isEmpty()) {
             this.extensionValue = null;
         } else {

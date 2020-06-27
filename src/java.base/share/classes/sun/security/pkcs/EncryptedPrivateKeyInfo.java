@@ -124,7 +124,7 @@ public class EncryptedPrivateKeyInfo {
         DerOutputStream tmp = new DerOutputStream();
 
         // encode encryption algorithm
-        algid.encode(tmp);
+        algid.derEncode(tmp);
 
         // encode encrypted data
         tmp.putOctetString(encryptedData);

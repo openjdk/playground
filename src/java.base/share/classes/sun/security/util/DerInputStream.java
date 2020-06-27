@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Date;
-import java.util.Vector;
 
 import static java.nio.charset.StandardCharsets.*;
 
@@ -96,7 +95,7 @@ public class DerInputStream {
      *          encoding as well as tolerate leading 0s
      */
     public DerInputStream(byte[] data, int offset, int len,
-        boolean allowBER) throws IOException {
+            boolean allowBER) throws IOException {
         init(data, offset, len, allowBER);
     }
 
@@ -118,7 +117,8 @@ public class DerInputStream {
     /*
      * private helper routine
      */
-    private void init(byte[] data, int offset, int len, boolean allowBER) throws IOException {
+    private void init(byte[] data, int offset, int len, boolean allowBER)
+            throws IOException {
         if ((offset+2 > data.length) || (offset+len > data.length)) {
             throw new IOException("Encoding bytes too short");
         }
@@ -130,8 +130,7 @@ public class DerInputStream {
                 byte[] inData = new byte[len];
                 System.arraycopy(data, offset, inData, 0, len);
 
-                DerIndefLenConverter derIn = new DerIndefLenConverter();
-                byte[] result = derIn.convertBytes(inData);
+                byte[] result = DerIndefLenConverter.convertBytes(inData);
                 if (result == null) {
                     throw new IOException("not all indef len BER resolved");
                 } else {
@@ -160,7 +159,7 @@ public class DerInputStream {
      *          same.
      */
     public DerInputStream subStream(int len, boolean do_skip)
-    throws IOException {
+            throws IOException {
         DerInputBuffer newbuf = buffer.dup();
 
         newbuf.truncate(len);
@@ -372,7 +371,7 @@ public class DerInputStream {
      * @return array of the values in the sequence
      */
     public DerValue[] getSet(int startLen, boolean implicit)
-        throws IOException {
+            throws IOException {
         tag = (byte)buffer.read();
         if (!implicit) {
             if (tag != DerValue.tag_Set) {
@@ -399,50 +398,45 @@ public class DerInputStream {
                    DerIndefLenConverter.convertStream(buffer, lenByte, tag),
                    buffer.allowBER);
 
-           if (tag != buffer.read())
-                throw new IOException("Indefinite length encoding" +
-                        " not supported");
+           if (tag != buffer.read()) {
+               throw new IOException("Indefinite length encoding" +
+                       " not supported");
+           }
            len = DerInputStream.getDefiniteLength(buffer);
         }
 
-        if (len == 0)
+        if (len == 0) {
             // return empty array instead of null, which should be
             // used only for missing optionals
             return new DerValue[0];
+        }
 
         /*
          * Create a temporary stream from which to read the data,
          * unless it's not really needed.
          */
-        if (buffer.available() == len)
+        if (buffer.available() == len) {
             newstr = this;
-        else
+        } else {
             newstr = subStream(len, true);
+        }
 
         /*
          * Pull values out of the stream.
          */
-        Vector<DerValue> vec = new Vector<>(startLen);
+        List<DerValue> vec = new ArrayList<>(startLen);
         DerValue value;
 
         do {
             value = new DerValue(newstr.buffer, buffer.allowBER);
-            vec.addElement(value);
+            vec.add(value);
         } while (newstr.available() > 0);
 
-        if (newstr.available() != 0)
+        if (newstr.available() != 0) {
             throw new IOException("Extra data at end of vector");
+        }
 
-        /*
-         * Now stick them into the array we're returning.
-         */
-        int             i, max = vec.size();
-        DerValue[]      retval = new DerValue[max];
-
-        for (i = 0; i < max; i++)
-            retval[i] = vec.elementAt(i);
-
-        return retval;
+        return vec.toArray(new DerValue[vec.size()]);
     }
 
     /**
@@ -508,21 +502,23 @@ public class DerInputStream {
      * stream.
      * @param stringTag the tag for the type of string to read
      * @param stringName a name to display in error messages
-     * @param enc the encoder to use to interpret the data. Should
+     * @param charset the encoder to use to interpret the data. Should
      * correspond to the stringTag above.
      */
     private String readString(byte stringTag, String stringName,
                               Charset charset) throws IOException {
 
-        if (buffer.read() != stringTag)
+        if (buffer.read() != stringTag) {
             throw new IOException("DER input not a " +
-                                  stringName + " string");
+                    stringName + " string");
+        }
 
         int length = getDefiniteLength(buffer);
         byte[] retval = new byte[length];
-        if ((length != 0) && (buffer.read(retval) != length))
+        if ((length != 0) && (buffer.read(retval) != length)) {
             throw new IOException("Short read of DER " +
-                                  stringName + " string");
+                    stringName + " string");
+        }
 
         return new String(retval, charset);
     }
@@ -531,8 +527,9 @@ public class DerInputStream {
      * Get a UTC encoded time value from the input stream.
      */
     public Date getUTCTime() throws IOException {
-        if (buffer.read() != DerValue.tag_UtcTime)
+        if (buffer.read() != DerValue.tag_UtcTime) {
             throw new IOException("DER input, UTCtime tag invalid ");
+        }
         return buffer.getUTCTime(getDefiniteLength(buffer));
     }
 
@@ -540,8 +537,9 @@ public class DerInputStream {
      * Get a Generalized encoded time value from the input stream.
      */
     public Date getGeneralizedTime() throws IOException {
-        if (buffer.read() != DerValue.tag_GeneralizedTime)
+        if (buffer.read() != DerValue.tag_GeneralizedTime) {
             throw new IOException("DER input, GeneralizedTime tag invalid ");
+        }
         return buffer.getGeneralizedTime(getDefiniteLength(buffer));
     }
 
@@ -549,7 +547,7 @@ public class DerInputStream {
      * Get a byte from the input stream.
      */
     // package private
-    int getByte() throws IOException {
+    int getByte() {
         return (0x00ff & buffer.read());
     }
 
@@ -597,11 +595,12 @@ public class DerInputStream {
              * NOTE:  tmp == 0 indicates indefinite length encoded data.
              * tmp > 4 indicates more than 4Gb of data.
              */
-            if (tmp == 0)
+            if (tmp == 0) {
                 return -1;
-            if (tmp < 0 || tmp > 4)
-                throw new IOException(mdName + "lengthTag=" + tmp + ", "
-                    + ((tmp < 0) ? "incorrect DER encoding." : "too big."));
+            }
+            if (tmp > 4) {
+                throw new IOException(mdName + "lengthTag=" + tmp + ", too big.");
+            }
 
             value = 0x0ff & in.read();
             tmp--;

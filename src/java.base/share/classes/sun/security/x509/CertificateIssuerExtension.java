@@ -74,7 +74,7 @@ public class CertificateIssuerExtension extends Extension
     /**
      * Encode this extension
      */
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (names == null || names.isEmpty()) {
             this.extensionValue = null;
             return;
@@ -179,15 +179,14 @@ public class CertificateIssuerExtension extends Extension
      * @param out the OutputStream to write the extension to
      * @exception IOException on encoding errors
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream  tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (extensionValue == null) {
             extensionId = PKIXExtensions.CertificateIssuer_Id;
             critical = true;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

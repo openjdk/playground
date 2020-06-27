@@ -61,7 +61,7 @@ public class NullX500Name {
 
         // encode, getEncoded()
         DerOutputStream dos = new DerOutputStream();
-        subject.encode(dos);
+        subject.derEncode(dos);
         byte[] out = dos.toByteArray();
         byte[] enc = subject.getEncoded();
         HexPrinter e = HexPrinter.simple();

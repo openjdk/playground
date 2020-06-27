@@ -70,7 +70,7 @@ implements CertAttrSet<String> {
     GeneralNames        names = null;
 
     // Encode this extension
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (names == null || names.isEmpty()) {
             this.extensionValue = null;
             return;
@@ -164,15 +164,14 @@ implements CertAttrSet<String> {
      * @param out the OutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (extensionValue == null) {
             extensionId = PKIXExtensions.SubjectAlternativeName_Id;
             critical = false;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**

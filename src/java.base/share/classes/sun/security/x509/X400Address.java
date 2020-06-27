@@ -369,9 +369,14 @@ public class X400Address implements GeneralNameInterface {
      * @param out the DER stream to encode the X400Address to.
      * @exception IOException on encoding errors.
      */
-    public void encode(DerOutputStream out) throws IOException {
-        DerValue derValue = new DerValue(nameValue);
-        out.putDerValue(derValue);
+    @Override
+    public void derEncode(DerOutputStream out) {
+        try {
+            DerValue derValue = new DerValue(nameValue);
+            out.putDerValue(derValue);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     /**

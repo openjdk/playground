@@ -179,8 +179,8 @@ public class X509CertInfo implements CertAttrSet<String> {
      * @exception CertificateException on encoding errors.
      * @exception IOException on other errors.
      */
-    public void encode(OutputStream out)
-    throws CertificateException, IOException {
+    @Override
+    public void encode(DerOutputStream out) throws CertificateException {
         if (rawCertInfo == null) {
             DerOutputStream tmp = new DerOutputStream();
             emit(tmp);
@@ -229,8 +229,6 @@ public class X509CertInfo implements CertAttrSet<String> {
                 rawCertInfo = tmp.toByteArray();
             }
             return rawCertInfo.clone();
-        } catch (IOException e) {
-            throw new CertificateEncodingException(e.toString());
         } catch (CertificateException e) {
             throw new CertificateEncodingException(e.toString());
         }
@@ -758,8 +756,7 @@ public class X509CertInfo implements CertAttrSet<String> {
     /*
      * Marshal the contents of a "raw" certificate into a DER sequence.
      */
-    private void emit(DerOutputStream out)
-    throws CertificateException, IOException {
+    private void emit(DerOutputStream out) throws CertificateException {
         DerOutputStream tmp = new DerOutputStream();
 
         // version number, iff not V1
@@ -775,7 +772,7 @@ public class X509CertInfo implements CertAttrSet<String> {
             throw new CertificateParsingException(
                       "Null issuer DN not allowed in v1 certificate");
 
-        issuer.encode(tmp);
+        issuer.derEncode(tmp);
         interval.encode(tmp);
 
         // Encode subject (principal) and associated key
@@ -783,7 +780,7 @@ public class X509CertInfo implements CertAttrSet<String> {
             (subject.toString() == null))
             throw new CertificateParsingException(
                       "Null subject DN not allowed in v1 certificate");
-        subject.encode(tmp);
+        subject.derEncode(tmp);
         pubKey.encode(tmp);
 
         // Encode issuerUniqueId & subjectUniqueId.

@@ -157,7 +157,7 @@ public class CertId {
     public void encode(DerOutputStream out) throws IOException {
 
         DerOutputStream tmp = new DerOutputStream();
-        hashAlgId.encode(tmp);
+        hashAlgId.derEncode(tmp);
         tmp.putOctetString(issuerNameHash);
         tmp.putOctetString(issuerKeyHash);
         certSerialNumber.encode(tmp);

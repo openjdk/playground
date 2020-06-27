@@ -62,7 +62,7 @@ import sun.security.util.*;
  * Note that instances of this class are immutable.
  *
  */
-public class RDN {
+public class RDN implements DerEncoder {
 
     // currently not private, accessed directly from X500Name
     final AVA[] assertion;
@@ -336,7 +336,8 @@ public class RDN {
      * @param out DerOutputStream to which RDN is to be written
      * @throws IOException on error
      */
-    void encode(DerOutputStream out) throws IOException {
+    @Override
+    public void derEncode(DerOutputStream out) {
         out.putOrderedSetOf(DerValue.tag_Set, assertion);
     }
 

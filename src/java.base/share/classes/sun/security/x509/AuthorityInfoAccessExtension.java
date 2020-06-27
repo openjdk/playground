@@ -92,7 +92,7 @@ public class AuthorityInfoAccessExtension extends Extension
      * @throws IOException on error
      */
     public AuthorityInfoAccessExtension(
-            List<AccessDescription> accessDescriptions) throws IOException {
+            List<AccessDescription> accessDescriptions) {
         this.extensionId = PKIXExtensions.AuthInfoAccess_Id;
         this.critical = false;
         this.accessDescriptions = accessDescriptions;
@@ -149,15 +149,14 @@ public class AuthorityInfoAccessExtension extends Extension
      * @param out the DerOutputStream to write the extension to.
      * @exception IOException on encoding errors.
      */
-    public void encode(OutputStream out) throws IOException {
-        DerOutputStream tmp = new DerOutputStream();
+    @Override
+    public void encode(DerOutputStream out) {
         if (this.extensionValue == null) {
             this.extensionId = PKIXExtensions.AuthInfoAccess_Id;
             this.critical = false;
             encodeThis();
         }
-        super.encode(tmp);
-        out.write(tmp.toByteArray());
+        super.encode(out);
     }
 
     /**
@@ -216,7 +215,7 @@ public class AuthorityInfoAccessExtension extends Extension
     }
 
      // Encode this extension value
-    private void encodeThis() throws IOException {
+    private void encodeThis() {
         if (accessDescriptions.isEmpty()) {
             this.extensionValue = null;
         } else {
