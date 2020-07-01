@@ -203,21 +203,20 @@ public final class Subject implements java.io.Serializable {
      *          Sets.
      */
     public Subject(boolean readOnly, Set<? extends Principal> principals,
-                   Set<?> pubCredentials, Set<?> privCredentials)
-    {
-        LinkedList<Principal> princList
+                   Set<?> pubCredentials, Set<?> privCredentials) {
+        LinkedList<Principal> principalList
                 = collectionNullClean(principals);
         LinkedList<Object> pubCredsList
                 = collectionNullClean(pubCredentials);
         LinkedList<Object> privCredsList
                 = collectionNullClean(privCredentials);
 
-        this.principals = Collections.synchronizedSet(new SecureSet<>
-                                (this, PRINCIPAL_SET, princList));
-        this.pubCredentials = Collections.synchronizedSet(new SecureSet<>
-                                (this, PUB_CREDENTIAL_SET, pubCredsList));
-        this.privCredentials = Collections.synchronizedSet(new SecureSet<>
-                                (this, PRIV_CREDENTIAL_SET, privCredsList));
+        this.principals = Collections.synchronizedSet(
+                new SecureSet<>(this, PRINCIPAL_SET, principalList));
+        this.pubCredentials = Collections.synchronizedSet(
+                new SecureSet<>(this, PUB_CREDENTIAL_SET, pubCredsList));
+        this.privCredentials = Collections.synchronizedSet(
+                new SecureSet<>(this, PRIV_CREDENTIAL_SET, privCredsList));
         this.readOnly = readOnly;
     }
 
@@ -978,9 +977,9 @@ public final class Subject implements java.io.Serializable {
 
         // Rewrap the principals into a SecureSet
         try {
-            LinkedList<Principal> princList = collectionNullClean(inputPrincs);
+            LinkedList<Principal> principalList = collectionNullClean(inputPrincs);
             principals = Collections.synchronizedSet(new SecureSet<>
-                                (this, PRINCIPAL_SET, princList));
+                                (this, PRINCIPAL_SET, principalList));
         } catch (NullPointerException npe) {
             // Sometimes people deserialize the principals set only.
             // Subject is not accessible, so just don't fail.
