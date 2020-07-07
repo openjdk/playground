@@ -624,8 +624,24 @@ public class X509CertInfo implements CertAttrSet<String> {
         }
     }
 
-    /*
+    /**
      * This routine unmarshals the certificate information.
+     *
+     *    TBSCertificate  ::=  SEQUENCE  {
+     *         version         [0]  EXPLICIT Version DEFAULT v1,
+     *         serialNumber         CertificateSerialNumber,
+     *         signature            AlgorithmIdentifier,
+     *         issuer               Name,
+     *         validity             Validity,
+     *         subject              Name,
+     *         subjectPublicKeyInfo SubjectPublicKeyInfo,
+     *         issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
+     *                              -- If present, version MUST be v2 or v3
+     *         subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
+     *                              -- If present, version MUST be v2 or v3
+     *         extensions      [3]  EXPLICIT Extensions OPTIONAL
+     *                              -- If present, version MUST be v3
+     *         }
      */
     private void parse(DerValue val)
     throws CertificateParsingException, IOException {
@@ -640,14 +656,15 @@ public class X509CertInfo implements CertAttrSet<String> {
         in = val.data;
 
         // Version
-        tmp = in.getDerValue();
-        if (tmp.isContextSpecific((byte)0)) {
-            version = new CertificateVersion(tmp);
-            tmp = in.getDerValue();
+        var v = in.getOptionalExplicitContextSpecific(0);
+        if (v.isPresent()) {
+            version = new CertificateVersion(v.get().getInteger());
+        } else {
+            version = new CertificateVersion(CertificateVersion.V1);
         }
 
         // Serial number ... an integer
-        serialNum = new CertificateSerialNumber(tmp);
+        serialNum = new CertificateSerialNumber(in.getBigInteger());
 
         // Algorithm Identifier
         algId = new CertificateAlgorithmId(in);
@@ -684,29 +701,22 @@ public class X509CertInfo implements CertAttrSet<String> {
         }
 
         // Get the issuerUniqueId if present
-        tmp = in.getDerValue();
-        if (tmp.isContextSpecific((byte)1)) {
-            issuerUniqueId = new UniqueIdentity(tmp);
-            if (in.available() == 0)
-                return;
-            tmp = in.getDerValue();
+        if (in.seeOptionalContextSpecific(1)) {
+            issuerUniqueId = new UniqueIdentity(in.getDerValue());
         }
 
         // Get the subjectUniqueId if present.
-        if (tmp.isContextSpecific((byte)2)) {
-            subjectUniqueId = new UniqueIdentity(tmp);
-            if (in.available() == 0)
-                return;
-            tmp = in.getDerValue();
+        if (in.seeOptionalContextSpecific(2)) {
+            subjectUniqueId = new UniqueIdentity(in.getDerValue());
         }
 
         // Get the extensions.
-        if (version.compare(CertificateVersion.V3) != 0) {
-            throw new CertificateParsingException(
-                      "Extensions not allowed in v2 certificate");
-        }
-        if (tmp.isConstructed() && tmp.isContextSpecific((byte)3)) {
-            extensions = new CertificateExtensions(tmp.data);
+        if (in.seeOptionalContextSpecific(3)) {
+            if (version.compare(CertificateVersion.V3) != 0) {
+                throw new CertificateParsingException(
+                        "Extensions not allowed in v2 certificate");
+            }
+            extensions = new CertificateExtensions(in.getDerValue().data);
         }
 
         // verify X.509 V3 Certificate

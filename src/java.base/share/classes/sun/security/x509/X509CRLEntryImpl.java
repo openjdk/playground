@@ -467,19 +467,13 @@ public class X509CRLEntryImpl extends X509CRLEntry
         this.serialNumber = new SerialNumber(val);
 
         // revocationDate
-        int nextByte = derVal.data.peekByte();
-        if ((byte)nextByte == DerValue.tag_UtcTime) {
-            this.revocationDate = derVal.data.getUTCTime();
-        } else if ((byte)nextByte == DerValue.tag_GeneralizedTime) {
-            this.revocationDate = derVal.data.getGeneralizedTime();
-        } else
-            throw new CRLException("Invalid encoding for revocation date");
+        this.revocationDate = derVal.data.getTime();
 
         if (derVal.data.available() == 0)
             return;  // no extensions
 
         // crlEntryExtensions
-        this.extensions = new CRLExtensions(derVal.toDerInputStream());
+        this.extensions = new CRLExtensions(derVal.data);
     }
 
     /**

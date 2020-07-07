@@ -26,9 +26,13 @@
  * @bug 6731685
  * @summary CertificateFactory.generateCertificates throws IOException on PKCS7 cert chain
  * @modules java.base/sun.security.util
+ * @library /test/lib
  */
 
 import java.io.*;
+import java.util.Arrays;
+
+import jdk.test.lib.Asserts;
 import sun.security.util.*;
 
 public class Indefinite {
@@ -36,10 +40,30 @@ public class Indefinite {
     public static void main(String[] args) throws Exception {
         byte[] input = {
             // An OCTET-STRING in 2 parts
-            4, (byte)0x80, 4, 2, 'a', 'b', 4, 2, 'c', 'd', 0, 0,
-            // Garbage follows, may be falsely recognized as EOC
-            0, 0, 0, 0
+            0x24, (byte)0x80, 4, 2, 'a', 'b', 4, 2, 'c', 'd', 0, 0,
         };
-        new DerValue(new ByteArrayInputStream(input));
+
+        // Add some garbage, may be falsely recognized as EOC
+        new DerValue(new ByteArrayInputStream(
+                Arrays.copyOf(input, input.length + 4)));
+
+        // Make a SEQUENCE of input and (bool) true.
+        byte[] comp = new byte[input.length + 5];
+        comp[0] = DerValue.tag_Sequence;
+        comp[1] = (byte)(input.length + 3);
+        System.arraycopy(input, 0, comp, 2, input.length);
+        comp[2 + input.length] = comp[3 + input.length] = comp[4 + input.length] = 1;
+
+        // Read it
+        DerValue d = new DerValue(comp);
+        Asserts.assertEQ(new String(d.data.getDerValue().getOctetString()), "abcd");
+        Asserts.assertTrue(d.data.getBoolean());
+        d.data.atEnd();
+
+        // Or skip it
+        d = new DerValue(comp);
+        d.data.skipDerValue();
+        Asserts.assertTrue(d.data.getBoolean());
+        d.data.atEnd();
     }
 }

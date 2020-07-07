@@ -1557,7 +1557,11 @@ public final class Main {
                 badCerts[i] = new X509CRLEntryImpl(new BigInteger(ids.get(i)), firstDate);
             }
         }
-        X509CRLImpl crl = new X509CRLImpl(owner, firstDate, lastDate, badCerts);
+        CRLExtensions crlExts = new CRLExtensions();
+        AuthorityKeyIdentifierExtension ext = new AuthorityKeyIdentifierExtension(
+                new KeyIdentifier(signerCert.getPublicKey()), null, null);
+        crlExts.set(ext.getId(), ext);
+        X509CRLImpl crl = new X509CRLImpl(owner, firstDate, lastDate, badCerts, crlExts);
         crl.sign(privateKey, sigAlgName);
         if (rfc) {
             out.println("-----BEGIN X509 CRL-----");

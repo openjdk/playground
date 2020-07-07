@@ -192,51 +192,36 @@ public class DistributionPoint {
             throw new IOException("Invalid encoding of DistributionPoint.");
         }
 
-        // Note that all the fields in DistributionPoint are defined as
-        // being OPTIONAL, i.e., there could be an empty SEQUENCE, resulting
-        // in val.data being null.
-        while ((val.data != null) && (val.data.available() != 0)) {
-            DerValue opt = val.data.getDerValue();
-
-            if (opt.isContextSpecific(TAG_DIST_PT) && opt.isConstructed()) {
-                if ((fullName != null) || (relativeName != null)) {
-                    throw new IOException("Duplicate DistributionPointName in "
-                                          + "DistributionPoint.");
-                }
-                DerValue distPnt = opt.data.getDerValue();
-                if (distPnt.isContextSpecific(TAG_FULL_NAME)
-                        && distPnt.isConstructed()) {
-                    distPnt.resetTag(DerValue.tag_Sequence);
-                    fullName = new GeneralNames(distPnt);
-                } else if (distPnt.isContextSpecific(TAG_REL_NAME)
-                        && distPnt.isConstructed()) {
-                    distPnt.resetTag(DerValue.tag_Set);
-                    relativeName = new RDN(distPnt);
-                } else {
-                    throw new IOException("Invalid DistributionPointName in "
-                                          + "DistributionPoint");
-                }
-            } else if (opt.isContextSpecific(TAG_REASONS)
-                                                && !opt.isConstructed()) {
-                if (reasonFlags != null) {
-                    throw new IOException("Duplicate Reasons in " +
-                                          "DistributionPoint.");
-                }
-                opt.resetTag(DerValue.tag_BitString);
-                reasonFlags = (opt.getUnalignedBitString()).toBooleanArray();
-            } else if (opt.isContextSpecific(TAG_ISSUER)
-                                                && opt.isConstructed()) {
-                if (crlIssuer != null) {
-                    throw new IOException("Duplicate CRLIssuer in " +
-                                          "DistributionPoint.");
-                }
-                opt.resetTag(DerValue.tag_Sequence);
-                crlIssuer = new GeneralNames(opt);
+        var v = val.data.getOptionalExplicitContextSpecific(TAG_DIST_PT);
+        if (v.isPresent()) {
+            DerValue distPnt = v.get();
+            if (distPnt.isContextSpecific(TAG_FULL_NAME)
+                    && distPnt.isConstructed()) {
+                distPnt.resetTag(DerValue.tag_Sequence);
+                fullName = new GeneralNames(distPnt);
+            } else if (distPnt.isContextSpecific(TAG_REL_NAME)
+                    && distPnt.isConstructed()) {
+                distPnt.resetTag(DerValue.tag_Set);
+                relativeName = new RDN(distPnt);
             } else {
-                throw new IOException("Invalid encoding of " +
-                                      "DistributionPoint.");
+                throw new IOException("Invalid DistributionPointName in "
+                        + "DistributionPoint");
             }
         }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_REASONS, DerValue.tag_BitString);
+        if (v.isPresent()) {
+            reasonFlags = (v.get().getUnalignedBitString()).toBooleanArray();
+        }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_ISSUER, DerValue.tag_Sequence);
+        if (v.isPresent()) {
+            crlIssuer = new GeneralNames(v.get());
+        }
+
+        val.data.atEnd();
         if ((crlIssuer == null) && (fullName == null) && (relativeName == null)) {
             throw new IOException("One of fullName, relativeName, "
                 + " and crlIssuer has to be set");

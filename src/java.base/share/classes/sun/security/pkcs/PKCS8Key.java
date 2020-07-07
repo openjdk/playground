@@ -108,27 +108,16 @@ public class PKCS8Key implements PrivateKey {
             algid = AlgorithmId.parse (val.data.getDerValue ());
             key = val.data.getOctetString ();
 
-            DerValue next;
-            if (val.data.available() == 0) {
-                return;
+            if (val.data.seeOptionalContextSpecific(0)) {
+                val.data.skipDerValue();
             }
-            next = val.data.getDerValue();
-            if (next.isContextSpecific((byte)0)) {
-                if (val.data.available() == 0) {
-                    return;
-                }
-                next = val.data.getDerValue();
-            }
-
-            if (next.isContextSpecific((byte)1)) {
+            if (val.data.seeOptionalContextSpecific(1)) {
                 if (version == V1) {
                     throw new InvalidKeyException("publicKey seen in v1");
                 }
-                if (val.data.available() == 0) {
-                    return;
-                }
+                val.data.skipDerValue();
             }
-            throw new InvalidKeyException("Extra bytes");
+            val.data.atEnd();
         } catch (IOException e) {
             throw new InvalidKeyException("IOException : " + e.getMessage());
         }

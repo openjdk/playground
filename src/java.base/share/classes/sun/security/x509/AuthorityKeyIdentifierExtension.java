@@ -155,41 +155,25 @@ implements CertAttrSet<String> {
                                   "AuthorityKeyIdentifierExtension.");
         }
 
-        // Note that all the fields in AuthorityKeyIdentifier are defined as
-        // being OPTIONAL, i.e., there could be an empty SEQUENCE, resulting
-        // in val.data being null.
-        while ((val.data != null) && (val.data.available() != 0)) {
-            DerValue opt = val.data.getDerValue();
-
-            // NB. this is always encoded with the IMPLICIT tag
-            // The checks only make sense if we assume implicit tagging,
-            // with explicit tagging the form is always constructed.
-            if (opt.isContextSpecific(TAG_ID) && !opt.isConstructed()) {
-                if (id != null)
-                    throw new IOException("Duplicate KeyIdentifier in " +
-                                          "AuthorityKeyIdentifier.");
-                opt.resetTag(DerValue.tag_OctetString);
-                id = new KeyIdentifier(opt);
-
-            } else if (opt.isContextSpecific(TAG_NAMES) &&
-                       opt.isConstructed()) {
-                if (names != null)
-                    throw new IOException("Duplicate GeneralNames in " +
-                                          "AuthorityKeyIdentifier.");
-                opt.resetTag(DerValue.tag_Sequence);
-                names = new GeneralNames(opt);
-
-            } else if (opt.isContextSpecific(TAG_SERIAL_NUM) &&
-                       !opt.isConstructed()) {
-                if (serialNum != null)
-                    throw new IOException("Duplicate SerialNumber in " +
-                                          "AuthorityKeyIdentifier.");
-                opt.resetTag(DerValue.tag_Integer);
-                serialNum = new SerialNumber(opt);
-            } else
-                throw new IOException("Invalid encoding of " +
-                                      "AuthorityKeyIdentifierExtension.");
+        var v = val.data.getOptionalImplicitContextSpecific(
+                TAG_ID, DerValue.tag_OctetString);
+        if (v.isPresent()) {
+            id = new KeyIdentifier(v.get());
         }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_NAMES, DerValue.tag_Sequence);
+        if (v.isPresent()) {
+            names = new GeneralNames(v.get());
+        }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_SERIAL_NUM, DerValue.tag_Integer);
+        if (v.isPresent()) {
+            serialNum = new SerialNumber(v.get().getBigInteger());
+        }
+
+        val.data.atEnd();
     }
 
     /**

@@ -129,6 +129,15 @@ public class SignerInfo implements DerEncoder {
     /**
      * Parses a PKCS#7 signer info.
      *
+     * SignerInfo ::= SEQUENCE {
+     *         version CMSVersion,
+     *         sid SignerIdentifier,
+     *         digestAlgorithm DigestAlgorithmIdentifier,
+     *         signedAttrs [0] IMPLICIT SignedAttributes OPTIONAL,
+     *         signatureAlgorithm SignatureAlgorithmIdentifier,
+     *         signature SignatureValue,
+     *         unsignedAttrs [1] IMPLICIT UnsignedAttributes OPTIONAL }
+     *
      * <p>This constructor is used only for backwards compatibility with
      * PKCS#7 blocks that were generated using JDK1.1.x.
      *
@@ -162,7 +171,7 @@ public class SignerInfo implements DerEncoder {
         } else {
             // check if set of auth attributes (implicit tag) is provided
             // (auth attributes are OPTIONAL)
-            if ((byte)(derin.peekByte()) == (byte)0xA0) {
+            if (derin.seeOptionalContextSpecific(0)) {
                 authenticatedAttributes = new PKCS9Attributes(derin);
             }
         }
@@ -184,8 +193,7 @@ public class SignerInfo implements DerEncoder {
         } else {
             // check if set of unauth attributes (implicit tag) is provided
             // (unauth attributes are OPTIONAL)
-            if (derin.available() != 0
-                && (byte)(derin.peekByte()) == (byte)0xA1) {
+            if (derin.seeOptionalContextSpecific(1)) {
                 unauthenticatedAttributes =
                     new PKCS9Attributes(derin, true);// ignore unsupported attrs
             }

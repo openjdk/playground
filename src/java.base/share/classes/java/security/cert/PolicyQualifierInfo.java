@@ -27,8 +27,10 @@ package java.security.cert;
 
 import java.io.IOException;
 
+import sun.security.util.DerOutputStream;
 import sun.security.util.HexDumpEncoder;
 import sun.security.util.DerValue;
+import sun.security.util.ObjectIdentifier;
 
 /**
  * An immutable policy qualifier represented by the ASN.1 PolicyQualifierInfo
@@ -90,6 +92,28 @@ public class PolicyQualifierInfo {
     private String pqiString;
 
     /**
+     * Creates from material.
+     * @param mId id
+     * @param mData data
+     */
+    public PolicyQualifierInfo(String mId, byte[] mData) {
+        this.mId = mId;
+        this.mData = mData;
+    }
+
+    private void encodeThis() throws IOException {
+        if (mEncoded != null) {
+            return;
+        }
+        DerOutputStream out = new DerOutputStream();
+        DerOutputStream ins = new DerOutputStream();
+        ins.putOID(ObjectIdentifier.of(mId));
+        ins.write(mData);
+        out.write(DerValue.tag_Sequence, ins);
+        mEncoded = out.toByteArray();
+    }
+
+    /**
      * Creates an instance of {@code PolicyQualifierInfo} from the
      * encoded bytes. The encoded byte array is copied on construction.
      *
@@ -134,7 +158,8 @@ public class PolicyQualifierInfo {
      * Note that a copy is returned, so the data is cloned each time
      * this method is called.
      */
-    public final byte[] getEncoded() {
+    public final byte[] getEncoded() throws IOException {
+        encodeThis();
         return mEncoded.clone();
     }
 

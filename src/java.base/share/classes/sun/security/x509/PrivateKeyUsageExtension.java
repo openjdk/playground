@@ -138,38 +138,24 @@ implements CertAttrSet<String> {
         this.critical = critical.booleanValue();
 
         this.extensionValue = (byte[]) value;
-        DerInputStream str = new DerInputStream(this.extensionValue);
-        DerValue[] seq = str.getSequence(2);
-
-        // NB. this is always encoded with the IMPLICIT tag
-        // The checks only make sense if we assume implicit tagging,
-        // with explicit tagging the form is always constructed.
-        for (int i = 0; i < seq.length; i++) {
-            DerValue opt = seq[i];
-
-            if (opt.isContextSpecific(TAG_BEFORE) &&
-                !opt.isConstructed()) {
-                if (notBefore != null) {
-                    throw new CertificateParsingException(
-                        "Duplicate notBefore in PrivateKeyUsage.");
-                }
-                opt.resetTag(DerValue.tag_GeneralizedTime);
-                str = new DerInputStream(opt.toByteArray());
-                notBefore = str.getGeneralizedTime();
-
-            } else if (opt.isContextSpecific(TAG_AFTER) &&
-                       !opt.isConstructed()) {
-                if (notAfter != null) {
-                    throw new CertificateParsingException(
-                        "Duplicate notAfter in PrivateKeyUsage.");
-                }
-                opt.resetTag(DerValue.tag_GeneralizedTime);
-                str = new DerInputStream(opt.toByteArray());
-                notAfter = str.getGeneralizedTime();
-            } else
-                throw new IOException("Invalid encoding of " +
-                                      "PrivateKeyUsageExtension");
+        DerValue derValue = new DerValue(this.extensionValue);
+        if (derValue.tag != DerValue.tag_Sequence) {
+            throw new IOException("Input not a SEQUNCE");
         }
+
+        var v = derValue.data.getOptionalImplicitContextSpecific(
+                TAG_BEFORE, DerValue.tag_GeneralizedTime);
+        if (v.isPresent()) {
+            notBefore = v.get().getGeneralizedTime();
+        }
+
+        v = derValue.data.getOptionalImplicitContextSpecific(
+                TAG_AFTER, DerValue.tag_GeneralizedTime);
+        if (v.isPresent()) {
+            notAfter = v.get().getGeneralizedTime();
+        }
+
+        derValue.data.atEnd();
     }
 
     /**

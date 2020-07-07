@@ -28,7 +28,9 @@ package sun.security.util;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import static java.nio.charset.StandardCharsets.*;
 
@@ -257,6 +259,7 @@ public class DerValue {
         // values such as sequences, sets...
         tag = (byte)in.read();
         byte lenByte = (byte)in.read();
+        llen = lenlen(lenByte);
         length = DerInputStream.getLength(lenByte, in);
         if (length == -1) {  // indefinite length encoding found
             DerInputBuffer inbuf = in.dup();
@@ -374,6 +377,8 @@ public class DerValue {
         return result;
     }
 
+    int llen = 0;
+
     /*
      * helper routine
      */
@@ -382,7 +387,10 @@ public class DerValue {
 
         tag = (byte)in.read();
         byte lenByte = (byte)in.read();
+
+        llen = lenlen(lenByte);
         length = DerInputStream.getLength(lenByte, in);
+
         if (length == -1) { // indefinite length encoding found
             in = new ByteArrayInputStream(
                     DerIndefLenConverter.convertStream(in, lenByte, tag));
@@ -399,6 +407,14 @@ public class DerValue {
 
         buffer = new DerInputBuffer(bytes, allowBER);
         return new DerInputStream(buffer);
+    }
+
+    private int lenlen(byte lenByte) {
+        if ((lenByte & 0x080) == 0x00) { // short form, 1 byte datum
+            return 1;
+        } else {                     // long form or indefinite
+            return 1 + (lenByte & 0x7f);
+        }
     }
 
     /**
@@ -608,6 +624,17 @@ public class DerValue {
             return getGeneralString();
         else
             return null;
+    }
+
+    public DerValue[] getSubs(byte type) throws IOException {
+        if (tag != type) {
+            throw new IOException("Unexpected tag: " + tag);
+        }
+        List<DerValue> result = new ArrayList<>();
+        while (data.available() > 0) {
+            result.add(data.getDerValue());
+        }
+        return result.toArray(new DerValue[result.size()]);
     }
 
     /**
@@ -944,5 +971,79 @@ public class DerValue {
     @Override
     public int hashCode() {
         return toString().hashCode();
+    }
+
+    /**
+     * Dump the content of this DerValue into stdout, decomposing the
+     * structire in a hierachical style.
+     *
+     * Note: might not be good at deal with IMPLICIT context-specific values
+     * because it has no hint on the original tag.
+     *
+     * Note: might not work correctly for some types of data if the data
+     * inside has been read before. Also, after calling print(), the data
+     * inside might be read and subsequent reading on some type of data.
+     *
+     * @param into if true, try to treat OCTET STRING as another DerValue.
+     * @throws IOException if an I/O error occurs.
+     */
+    public void print(boolean into) throws IOException {
+        v0("", 0, this, into);
+    }
+
+    private static void v0(String indent, int offset, DerValue v, boolean into)
+            throws IOException {
+        String label = String.format("%04x:%04x [%s]   ",
+                offset, 1 + v.llen + v.length, indent);
+        String value = switch (v.tag) {
+            case DerValue.tag_Null -> "NULL";
+            case DerValue.tag_OctetString -> v.getOctetString().length + " bytes";
+            case DerValue.tag_BitString -> v.getUnalignedBitString().length() + " bits";
+            case DerValue.tag_Integer -> "int " + v.getBigInteger();
+            case DerValue.tag_Boolean -> Boolean.toString(v.getBoolean());
+            case DerValue.tag_GeneralizedTime -> v.getGeneralizedTime().toString();
+            case DerValue.tag_UtcTime -> v.getUTCTime().toString();
+            case DerValue.tag_ObjectId -> {
+                String s = v.getOID().toString();
+                KnownOIDs k = KnownOIDs.findMatch(s);
+                yield "OID " + s + (k != null ? (" (" + k.stdName() + ")") : "");
+            }
+            default -> {
+                String s = v.getAsString();
+                yield s == null ? null : ('"' + s + '"');
+            }
+        };
+        if (value != null) {
+            System.out.println(label + value);
+            if (v.tag == DerValue.tag_OctetString && into) {
+                try {
+                    v.buffer.reset();
+                    DerValue v2 = new DerValue(v.getOctetString());
+                    v0(indent + "=", 0, v2, into);
+                } catch (IOException e) {
+                    //
+                }
+            }
+        } else if (v.isConstructed()) {
+            String type = "sub";
+            if (v.isContextSpecific()) {
+                type = "[" + (v.tag & 0x1f) + "]";
+            } else if (v.isApplication()) {
+                type = "[APPLICATION " + (v.tag & 0x1f) + "]";
+            } else if (v.tag == DerValue.tag_Sequence) {
+                type = "SEQUENCE";
+            } else if (v.tag == DerValue.tag_Set) {
+                type = "SET";
+            }
+            System.out.println(label + type);
+            int pos = 0;
+            offset += 1 + v.llen;
+            for (var vv : v.getSubs(v.tag)) {
+                v0(indent + pos++, offset, vv, into);
+                offset += vv.length + vv.llen + 1;
+            }
+        } else {
+            System.out.println(label + v);
+        }
     }
 }

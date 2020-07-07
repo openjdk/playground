@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @bug 8048357 8244565
+ * @bug 8048357 8244565 8246797
  * @summary PKCS8 Standards Conformance Tests
  * @library /test/lib
  * @modules java.base/sun.security.pkcs
@@ -85,15 +85,20 @@ public class PKCS8Test {
                 Utils.toHexString(encodedOutput));
 
         // Test additional fields
-        enlarge(0, "8000");    // attributes
-        enlarge(1, "810100");  // public key for v2
-        enlarge(1, "8000", "810100");  // both
+        String attr = "8000";
+        String pubK = "810100";
+        enlarge(0, attr);    // attributes
+        enlarge(1, pubK);  // public key for v2
+        enlarge(1, attr, pubK);  // both
 
         Assert.assertThrows(() -> enlarge(2));  // bad ver
-        Assert.assertThrows(() -> enlarge(0, "8000", "8000")); // no dup
-        Assert.assertThrows(() -> enlarge(0, "810100")); // no public in v1
-        Assert.assertThrows(() -> enlarge(1, "810100", "8000")); // bad order
-        Assert.assertThrows(() -> enlarge(1, "820100")); // bad tag
+        Assert.assertThrows(() -> enlarge(0, "4000")); // no application
+        Assert.assertThrows(() -> enlarge(0, "c000")); // no private
+        Assert.assertThrows(() -> enlarge(0, attr, attr)); // no dup
+        Assert.assertThrows(() -> enlarge(0, attr, "8200")); // no extra
+        Assert.assertThrows(() -> enlarge(0, pubK)); // no public in v1
+        Assert.assertThrows(() -> enlarge(1, pubK, attr)); // bad order
+        Assert.assertThrows(() -> enlarge(1, "8200")); // bad tag
     }
 
     /**

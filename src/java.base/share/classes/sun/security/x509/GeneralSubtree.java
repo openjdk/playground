@@ -77,22 +77,21 @@ public class GeneralSubtree {
         }
         name = new GeneralName(val.data.getDerValue(), true);
 
-        // NB. this is always encoded with the IMPLICIT tag
-        // The checks only make sense if we assume implicit tagging,
-        // with explicit tagging the form is always constructed.
-        while (val.data.available() != 0) {
-            DerValue opt = val.data.getDerValue();
-
-            if (opt.isContextSpecific(TAG_MIN) && !opt.isConstructed()) {
-                opt.resetTag(DerValue.tag_Integer);
-                minimum = opt.getInteger();
-
-            } else if (opt.isContextSpecific(TAG_MAX) && !opt.isConstructed()) {
-                opt.resetTag(DerValue.tag_Integer);
-                maximum = opt.getInteger();
-            } else
-                throw new IOException("Invalid encoding of GeneralSubtree.");
+        var v = val.data.getOptionalImplicitContextSpecific(
+                TAG_MIN, DerValue.tag_Integer);
+        if (v.isPresent()) {
+            minimum = v.get().getInteger();
+            if (minimum == 0) {
+                throw new IOException("default minimum encoded");
+            }
         }
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_MAX, DerValue.tag_Integer);
+        if (v.isPresent()) {
+            maximum = v.get().getInteger();
+        }
+
+        val.data.atEnd();
     }
 
     /**

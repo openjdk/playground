@@ -119,85 +119,74 @@ implements CertAttrSet<String> {
      * @exception ClassCastException if value is not an array of bytes
      * @exception IOException on error.
      */
-     public BasicConstraintsExtension(Boolean critical, Object value)
-         throws IOException
-    {
-         this.extensionId = PKIXExtensions.BasicConstraints_Id;
-         this.critical = critical.booleanValue();
+    public BasicConstraintsExtension(Boolean critical, Object value)
+            throws IOException {
+        this.extensionId = PKIXExtensions.BasicConstraints_Id;
+        this.critical = critical.booleanValue();
 
-         this.extensionValue = (byte[]) value;
-         DerValue val = new DerValue(this.extensionValue);
-         if (val.tag != DerValue.tag_Sequence) {
-             throw new IOException("Invalid encoding of BasicConstraints");
-         }
+        this.extensionValue = (byte[]) value;
+        DerValue val = new DerValue(this.extensionValue);
+        if (val.tag != DerValue.tag_Sequence) {
+            throw new IOException("Invalid encoding of BasicConstraints");
+        }
 
-         if (val.data == null || val.data.available() == 0) {
-             // non-CA cert ("cA" field is FALSE by default), return -1
-             return;
-         }
-         DerValue opt = val.data.getDerValue();
-         if (opt.tag != DerValue.tag_Boolean) {
-             // non-CA cert ("cA" field is FALSE by default), return -1
-             return;
-         }
+        if (val.data.seeOptional(DerValue.tag_Boolean)) {
+            this.ca = val.data.getBoolean();
+            if (!this.ca) {
+                throw new IOException("Default cA encoded in BasicConstraints");
+            }
+        }
+        if (this.ca) {
+            if (val.data.seeOptional(DerValue.tag_Integer)) {
+                this.pathLen = val.data.getInteger();
+            } else {
+                this.pathLen = Integer.MAX_VALUE;
+            }
+        }
+        val.data.atEnd();
+        /*
+         * Activate this check once again after PKIX profiling
+         * is a standard and this check no longer imposes an
+         * interoperability barrier.
+         * if (ca) {
+         *   if (!this.critical) {
+         *   throw new IOException("Criticality cannot be false for CA.");
+         *   }
+         * }
+         */
+    }
 
-         this.ca = opt.getBoolean();
-         if (val.data.available() == 0) {
-             // From PKIX profile:
-             // Where pathLenConstraint does not appear, there is no
-             // limit to the allowed length of the certification path.
-             this.pathLen = Integer.MAX_VALUE;
-             return;
-         }
+    /**
+     * Return user readable form of extension.
+     */
+    public String toString() {
+        return super.toString() +
+                "BasicConstraints:[\n  CA:" + ca +
+                "\n  PathLen:" +
+                ((pathLen >= 0) ? String.valueOf(pathLen) : " undefined") +
+                "\n]\n";
+    }
 
-         opt = val.data.getDerValue();
-         if (opt.tag != DerValue.tag_Integer) {
-             throw new IOException("Invalid encoding of BasicConstraints");
-         }
-         this.pathLen = opt.getInteger();
-         /*
-          * Activate this check once again after PKIX profiling
-          * is a standard and this check no longer imposes an
-          * interoperability barrier.
-          * if (ca) {
-          *   if (!this.critical) {
-          *   throw new IOException("Criticality cannot be false for CA.");
-          *   }
-          * }
-          */
-     }
+    /**
+     * Encode this extension value to the output stream.
+     *
+     * @param out the DerOutputStream to encode the extension to.
+     */
+    public void encode(OutputStream out) throws IOException {
+        DerOutputStream tmp = new DerOutputStream();
+        if (extensionValue == null) {
+            this.extensionId = PKIXExtensions.BasicConstraints_Id;
+            if (ca) {
+                critical = true;
+            } else {
+                critical = false;
+            }
+            encodeThis();
+        }
+        super.encode(tmp);
 
-     /**
-      * Return user readable form of extension.
-      */
-     public String toString() {
-         return super.toString() +
-             "BasicConstraints:[\n  CA:" + ca +
-             "\n  PathLen:" +
-             ((pathLen >= 0) ? String.valueOf(pathLen) : " undefined") +
-             "\n]\n";
-     }
-
-     /**
-      * Encode this extension value to the output stream.
-      *
-      * @param out the DerOutputStream to encode the extension to.
-      */
-     public void encode(OutputStream out) throws IOException {
-         DerOutputStream tmp = new DerOutputStream();
-         if (extensionValue == null) {
-             this.extensionId = PKIXExtensions.BasicConstraints_Id;
-             if (ca) {
-                 critical = true;
-             } else {
-                 critical = false;
-             }
-             encodeThis();
-         }
-         super.encode(tmp);
-
-         out.write(tmp.toByteArray());
-     }
+        out.write(tmp.toByteArray());
+    }
 
     /**
      * Set the attribute value.

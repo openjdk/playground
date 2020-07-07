@@ -177,37 +177,20 @@ implements CertAttrSet<String>, Cloneable {
                                   " NameConstraintsExtension.");
         }
 
-        // NB. this is always encoded with the IMPLICIT tag
-        // The checks only make sense if we assume implicit tagging,
-        // with explicit tagging the form is always constructed.
-        // Note that all the fields in NameConstraints are defined as
-        // being OPTIONAL, i.e., there could be an empty SEQUENCE, resulting
-        // in val.data being null.
-        if (val.data == null)
-            return;
-        while (val.data.available() != 0) {
-            DerValue opt = val.data.getDerValue();
-
-            if (opt.isContextSpecific(TAG_PERMITTED) && opt.isConstructed()) {
-                if (permitted != null) {
-                    throw new IOException("Duplicate permitted " +
-                         "GeneralSubtrees in NameConstraintsExtension.");
-                }
-                opt.resetTag(DerValue.tag_Sequence);
-                permitted = new GeneralSubtrees(opt);
-
-            } else if (opt.isContextSpecific(TAG_EXCLUDED) &&
-                       opt.isConstructed()) {
-                if (excluded != null) {
-                    throw new IOException("Duplicate excluded " +
-                             "GeneralSubtrees in NameConstraintsExtension.");
-                }
-                opt.resetTag(DerValue.tag_Sequence);
-                excluded = new GeneralSubtrees(opt);
-            } else
-                throw new IOException("Invalid encoding of " +
-                                      "NameConstraintsExtension.");
+        var v = val.data.getOptionalImplicitContextSpecific(
+                TAG_PERMITTED, DerValue.tag_Sequence);
+        if (v.isPresent()) {
+            permitted = new GeneralSubtrees(v.get());
         }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_EXCLUDED, DerValue.tag_Sequence);
+        if (v.isPresent()) {
+            excluded = new GeneralSubtrees(v.get());
+        }
+
+        val.data.atEnd();
+
         minMaxValid = false;
     }
 

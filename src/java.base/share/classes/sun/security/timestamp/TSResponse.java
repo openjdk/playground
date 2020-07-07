@@ -40,7 +40,7 @@ import sun.security.util.DerValue;
  *
  *     TimeStampResp ::= SEQUENCE {
  *         status            PKIStatusInfo,
- *         timeStampToken    TimeStampToken OPTIONAL ]
+ *         timeStampToken    TimeStampToken OPTIONAL }
  *
  *     PKIStatusInfo ::= SEQUENCE {
  *         status        PKIStatus,
@@ -332,17 +332,14 @@ public class TSResponse {
             debug.println("timestamp response: status=" + this.status);
         }
         // Parse statusString, if present
-        if (statusInfo.data.available() > 0) {
-            byte tag = (byte)statusInfo.data.peekByte();
-            if (tag == DerValue.tag_SequenceOf) {
-                DerValue[] strings = statusInfo.data.getSequence(1);
-                statusString = new String[strings.length];
-                for (int i = 0; i < strings.length; i++) {
-                    statusString[i] = strings[i].getUTF8String();
-                    if (debug != null) {
-                        debug.println("timestamp response: statusString=" +
-                                      statusString[i]);
-                    }
+        if (statusInfo.data.seeOptional(DerValue.tag_SequenceOf)) {
+            DerValue[] strings = statusInfo.data.getSequence(1);
+            statusString = new String[strings.length];
+            for (int i = 0; i < strings.length; i++) {
+                statusString[i] = strings[i].getUTF8String();
+                if (debug != null) {
+                    debug.println("timestamp response: statusString=" +
+                            statusString[i]);
                 }
             }
         }

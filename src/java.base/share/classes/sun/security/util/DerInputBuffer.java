@@ -61,13 +61,12 @@ class DerInputBuffer extends ByteArrayInputStream implements Cloneable {
     }
 
     DerInputBuffer dup() {
-        try {
-            DerInputBuffer retval = (DerInputBuffer)clone();
-            retval.mark(Integer.MAX_VALUE);
-            return retval;
-        } catch (CloneNotSupportedException e) {
-            throw new IllegalArgumentException(e.toString());
-        }
+        DerInputBuffer retval = new DerInputBuffer(this.buf);
+        retval.pos = this.pos;
+        retval.count = this.count;
+        retval.allowBER = this.allowBER;
+        retval.mark = this.pos;
+        return retval;
     }
 
     byte[] toByteArray() {

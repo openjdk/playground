@@ -1126,8 +1126,7 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
 
         // version (optional if v1)
         version = 0;   // by default, version = v1 == 0
-        nextByte = (byte)derStrm.peekByte();
-        if (nextByte == DerValue.tag_Integer) {
+        if (derStrm.seeOptional(DerValue.tag_Integer)) {
             version = derStrm.getInteger();
             if (version != 1)  // i.e. v2
                 throw new CRLException("Invalid version");
@@ -1151,34 +1150,14 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
         // thisUpdate
         // check if UTCTime encoded or GeneralizedTime
 
-        nextByte = (byte)derStrm.peekByte();
-        if (nextByte == DerValue.tag_UtcTime) {
-            thisUpdate = derStrm.getUTCTime();
-        } else if (nextByte == DerValue.tag_GeneralizedTime) {
-            thisUpdate = derStrm.getGeneralizedTime();
-        } else {
-            throw new CRLException("Invalid encoding for thisUpdate"
-                                   + " (tag=" + nextByte + ")");
+        thisUpdate = derStrm.getTime();
+
+        if (derStrm.seeOptional(t ->
+                t == DerValue.tag_UtcTime || t == DerValue.tag_GeneralizedTime)) {
+            nextUpdate = derStrm.getTime();
         }
 
-        if (derStrm.available() == 0)
-           return;     // done parsing no more optional fields present
-
-        // nextUpdate (optional)
-        nextByte = (byte)derStrm.peekByte();
-        if (nextByte == DerValue.tag_UtcTime) {
-            nextUpdate = derStrm.getUTCTime();
-        } else if (nextByte == DerValue.tag_GeneralizedTime) {
-            nextUpdate = derStrm.getGeneralizedTime();
-        } // else it is not present
-
-        if (derStrm.available() == 0)
-            return;     // done parsing no more optional fields present
-
-        // revokedCertificates (optional)
-        nextByte = (byte)derStrm.peekByte();
-        if ((nextByte == DerValue.tag_SequenceOf)
-            && (! ((nextByte & 0x0c0) == 0x080))) {
+        if (derStrm.seeOptional(DerValue.tag_SequenceOf)) {
             DerValue[] badCerts = derStrm.getSequence(4);
 
             X500Principal crlIssuer = getIssuerX500Principal();
@@ -1194,13 +1173,8 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
             }
         }
 
-        if (derStrm.available() == 0)
-            return;     // done parsing no extensions
-
-        // crlExtensions (optional)
-        tmp = derStrm.getDerValue();
-        if (tmp.isConstructed() && tmp.isContextSpecific((byte)0)) {
-            extensions = new CRLExtensions(tmp.data);
+        if (derStrm.seeOptionalContextSpecific(0)) {
+            extensions = new CRLExtensions(derStrm.getDerValue().data);
         }
         readOnly = true;
     }
@@ -1220,12 +1194,10 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
 
             DerValue tmp;
             // skip version number if present
-            byte nextByte = (byte)tbsIn.peekByte();
-            if (nextByte == DerValue.tag_Integer) {
-                tmp = tbsIn.getDerValue();
+            if (tbsIn.seeOptional(DerValue.tag_Integer)) {
+                tbsIn.skipDerValue();
             }
-
-            tmp = tbsIn.getDerValue();  // skip signature
+            tbsIn.skipDerValue();
             tmp = tbsIn.getDerValue();  // issuer
             byte[] principalBytes = tmp.toByteArray();
             return new X500Principal(principalBytes);

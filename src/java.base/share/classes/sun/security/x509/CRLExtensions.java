@@ -41,23 +41,7 @@ import sun.security.util.*;
 
 /**
  * This class defines the CRL Extensions.
- * It is used for both CRL Extensions and CRL Entry Extensions,
- * which are defined are follows:
- * <pre>
- * TBSCertList  ::=  SEQUENCE  {
- *    version              Version OPTIONAL,   -- if present, must be v2
- *    signature            AlgorithmIdentifier,
- *    issuer               Name,
- *    thisUpdate           Time,
- *    nextUpdate           Time  OPTIONAL,
- *    revokedCertificates  SEQUENCE OF SEQUENCE  {
- *        userCertificate         CertificateSerialNumber,
- *        revocationDate          Time,
- *        crlEntryExtensions      Extensions OPTIONAL  -- if present, must be v2
- *    }  OPTIONAL,
- *    crlExtensions        [0] EXPLICIT Extensions OPTIONAL  -- if present, must be v2
- * }
- * </pre>
+ * It is used for both CRL Extensions and CRL Entry Extensions.
  *
  * @author Hemma Prafullchandra
  */
@@ -87,15 +71,6 @@ public class CRLExtensions {
     private void init(DerInputStream derStrm) throws CRLException {
         try {
             DerInputStream str = derStrm;
-
-            byte nextByte = (byte)derStrm.peekByte();
-            // check for context specific byte 0; skip it
-            if (((nextByte & 0x0c0) == 0x080) &&
-                ((nextByte & 0x01f) == 0x000)) {
-                DerValue val = str.getDerValue();
-                str = val.data;
-            }
-
             DerValue[] exts = str.getSequence(5);
             for (int i = 0; i < exts.length; i++) {
                 Extension ext = new Extension(exts[i]);

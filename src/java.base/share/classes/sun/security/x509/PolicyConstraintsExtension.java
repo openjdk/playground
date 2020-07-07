@@ -148,27 +148,19 @@ implements CertAttrSet<String> {
         if (val.tag != DerValue.tag_Sequence) {
             throw new IOException("Sequence tag missing for PolicyConstraint.");
         }
-        DerInputStream in = val.data;
-        while (in != null && in.available() != 0) {
-            DerValue next = in.getDerValue();
-
-            if (next.isContextSpecific(TAG_REQUIRE) && !next.isConstructed()) {
-                if (this.require != -1)
-                    throw new IOException("Duplicate requireExplicitPolicy" +
-                          "found in the PolicyConstraintsExtension");
-                next.resetTag(DerValue.tag_Integer);
-                this.require = next.getInteger();
-
-            } else if (next.isContextSpecific(TAG_INHIBIT) &&
-                       !next.isConstructed()) {
-                if (this.inhibit != -1)
-                    throw new IOException("Duplicate inhibitPolicyMapping" +
-                          "found in the PolicyConstraintsExtension");
-                next.resetTag(DerValue.tag_Integer);
-                this.inhibit = next.getInteger();
-            } else
-                throw new IOException("Invalid encoding of PolicyConstraint");
+        var v = val.data.getOptionalImplicitContextSpecific(
+                TAG_REQUIRE, DerValue.tag_Integer);
+        if (v.isPresent()) {
+            this.require = v.get().getInteger();
         }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_INHIBIT, DerValue.tag_Integer);
+        if (v.isPresent()) {
+            this.inhibit = v.get().getInteger();
+        }
+
+        val.data.atEnd();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.Optional;
 import java.util.Vector;
+import java.util.function.Predicate;
 
 import static java.nio.charset.StandardCharsets.*;
 
@@ -319,6 +321,16 @@ public class DerInputStream {
             throw new IOException("getNull, bad data");
     }
 
+    public boolean getBoolean() throws IOException {
+        if (buffer.read() != DerValue.tag_Boolean || buffer.read() != 1)
+            throw new IOException("getBoolean, bad data");
+        int next = buffer.read();
+        if (next == -1) {
+            throw new IOException("Short read of DER Boolean");
+        }
+        return next != 0;
+    }
+
     /**
      * Reads an X.200 style Object Identifier from the stream.
      */
@@ -527,6 +539,17 @@ public class DerInputStream {
         return new String(retval, charset);
     }
 
+    public Date getTime() throws IOException {
+        int tag = buffer.read();
+        if (tag == DerValue.tag_UtcTime) {
+            return buffer.getUTCTime(getDefiniteLength(buffer));
+        } else if (tag == DerValue.tag_GeneralizedTime) {
+            return buffer.getGeneralizedTime(getDefiniteLength(buffer));
+        } else {
+            throw new IOException("Not a time value " + tag);
+        }
+    }
+
     /**
      * Get a UTC encoded time value from the input stream.
      */
@@ -661,4 +684,118 @@ public class DerInputStream {
      * empty.
      */
     public int available() { return buffer.available(); }
+
+    /**
+     * Ensure there is no more data. This can be called when the last
+     * expected field is parsed and we need to make sure no unread is left.
+     */
+    public void atEnd() throws IOException {
+        if (available() != 0) {
+            throw new IOException("Extra unused bytes");
+        }
+    }
+
+    /**
+     * Detect if the tag of the next DerValue in the stream matches the rule.
+     *
+     * Attention: tag is an integer casted from a byte. i.e. could be negative.
+     *
+     * @param rule the rule to check for the tag.
+     * @return true if matches, false otherwise or stream is at end.
+     * @throws IOException if an I/O error happens
+     */
+    public boolean seeOptional(Predicate<Integer> rule) throws IOException {
+        return available() > 0 && rule.test(peekByte());
+    }
+
+    /**
+     * Detect if the tag of the next DerValue in the stream is the specified.
+     *
+     * @param tag the expected tag
+     * @return true if is, false otherwise or stream is at end.
+     * @throws IOException if an I/O error happens
+     */
+    public boolean seeOptional(byte tag) throws IOException {
+        return seeOptional(t -> t == (tag & 0xff));
+    }
+
+    /**
+     * Returns the inner DerValue if the next DerValue in the stream is
+     * an EXPLICIT context-specific value tagged by {@code n}.
+     *
+     * @param n the expected tag
+     * @return the inner DerValue, or empty if not found or stream at end
+     * @throws IOException if an I/O error happens
+     */
+    public Optional<DerValue> getOptionalExplicitContextSpecific(int n)
+            throws IOException {
+        if (seeOptionalContextSpecific(n)) {
+            DerValue v = getDerValue(); // [n]
+            DerValue sub = v.data.getDerValue(); // inside [n]
+            v.data.atEnd(); // make sure there is only one inner value
+            return Optional.of(sub);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Returns the restored DerValue if the next DerValue in the stream is
+     * an IMPLICIT context-specific value tagged by {@code n}.
+     *
+     * @param n the expected tag
+     * @param tag the real tag for the IMPLICIT type
+     * @return the restored DerValue, or empty if not found or stream at end
+     * @throws IOException if an I/O error happens
+     */
+    public Optional<DerValue> getOptionalImplicitContextSpecific(int n, byte tag)
+            throws IOException {
+        if (seeOptionalContextSpecific(n)) {
+            DerValue v = getDerValue(); // [n]
+            v.resetTag(tag); // restore tag because IMPLICIT has overwritten it
+            return Optional.of(v);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Detect if the next DerValue in the stream is a context-specific value
+     * tagged by {@code n}.
+     *
+     * @param n the expected tag
+     * @return true if is, false otherwise or stream is at end.
+     * @throws IOException if an I/O error happens
+     */
+    public boolean seeOptionalContextSpecific(int n) throws IOException {
+        return seeOptional(t -> (t & 0x0c0) == 0x080 && (t & 0x01f) == n);
+    }
+
+    /**
+     * Skip the next DerValue in the stream. Indefinite length DerValue
+     * is supported.
+     *
+     * @throws IOException if an I/O error happens
+     */
+    public void skipDerValue() throws IOException {
+        int unresolved = 0;
+        while (true) {
+            tag = (byte) buffer.read();
+            byte lenByte = (byte) buffer.read();
+            int length = DerInputStream.getLength(lenByte, buffer);
+            if (tag == 0) { // EOC
+                unresolved--;
+                if (unresolved < 0 || length != 0) {
+                    throw new IOException("Expected EOC");
+                }
+            } else if (length == -1) {
+                unresolved++;
+            } else {
+                buffer.skip(length);
+            }
+            if (unresolved == 0) {
+                break;
+            }
+        }
+    }
 }

@@ -181,43 +181,55 @@ public class IssuingDistributionPointExtension extends Extension
                                   "IssuingDistributionPointExtension.");
         }
 
-        // All the elements in issuingDistributionPoint are optional
-        if ((val.data == null) || (val.data.available() == 0)) {
-            return;
+        var v = val.data.getOptionalExplicitContextSpecific(
+                TAG_DISTRIBUTION_POINT);
+        if (v.isPresent()) {
+            distributionPoint = new DistributionPointName(v.get());
         }
 
-        DerInputStream in = val.data;
-        while (in != null && in.available() != 0) {
-            DerValue opt = in.getDerValue();
-
-            if (opt.isContextSpecific(TAG_DISTRIBUTION_POINT) &&
-                opt.isConstructed()) {
-                distributionPoint =
-                    new DistributionPointName(opt.data.getDerValue());
-            } else if (opt.isContextSpecific(TAG_ONLY_USER_CERTS) &&
-                       !opt.isConstructed()) {
-                opt.resetTag(DerValue.tag_Boolean);
-                hasOnlyUserCerts = opt.getBoolean();
-            } else if (opt.isContextSpecific(TAG_ONLY_CA_CERTS) &&
-                  !opt.isConstructed()) {
-                opt.resetTag(DerValue.tag_Boolean);
-                hasOnlyCACerts = opt.getBoolean();
-            } else if (opt.isContextSpecific(TAG_ONLY_SOME_REASONS) &&
-                       !opt.isConstructed()) {
-                revocationReasons = new ReasonFlags(opt); // expects tag implicit
-            } else if (opt.isContextSpecific(TAG_INDIRECT_CRL) &&
-                       !opt.isConstructed()) {
-                opt.resetTag(DerValue.tag_Boolean);
-                isIndirectCRL = opt.getBoolean();
-            } else if (opt.isContextSpecific(TAG_ONLY_ATTRIBUTE_CERTS) &&
-                       !opt.isConstructed()) {
-                opt.resetTag(DerValue.tag_Boolean);
-                hasOnlyAttributeCerts = opt.getBoolean();
-            } else {
-                throw new IOException
-                    ("Invalid encoding of IssuingDistributionPoint");
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_ONLY_USER_CERTS, DerValue.tag_Boolean);
+        if (v.isPresent()) {
+            hasOnlyUserCerts = v.get().getBoolean();
+            if (!hasOnlyUserCerts) {
+                throw new IOException("default hasOnlyUserCerts encoded");
             }
         }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_ONLY_CA_CERTS, DerValue.tag_Boolean);
+        if (v.isPresent()) {
+            hasOnlyCACerts = v.get().getBoolean();
+            if (!hasOnlyCACerts) {
+                throw new IOException("default hasOnlyCACerts encoded");
+            }
+        }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_ONLY_SOME_REASONS, DerValue.tag_BitString);
+        if (v.isPresent()) {
+            revocationReasons = new ReasonFlags(v.get());
+        }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_INDIRECT_CRL, DerValue.tag_Boolean);
+        if (v.isPresent()) {
+            isIndirectCRL = v.get().getBoolean();
+            if (!isIndirectCRL) {
+                throw new IOException("default isIndirectCRL encoded");
+            }
+        }
+
+        v = val.data.getOptionalImplicitContextSpecific(
+                TAG_ONLY_ATTRIBUTE_CERTS, DerValue.tag_Boolean);
+        if (v.isPresent()) {
+            hasOnlyAttributeCerts = v.get().getBoolean();
+            if (!hasOnlyAttributeCerts) {
+                throw new IOException("default hasOnlyAttributeCerts encoded");
+            }
+        }
+
+        val.data.atEnd();
     }
 
     /**

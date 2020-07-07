@@ -80,32 +80,21 @@ public class EDIPartyName implements GeneralNameInterface {
      * @exception IOException on error.
      */
     public EDIPartyName(DerValue derValue) throws IOException {
-        DerInputStream in = new DerInputStream(derValue.toByteArray());
-        DerValue[] seq = in.getSequence(2);
-
-        int len = seq.length;
-        if (len < 1 || len > 2)
-            throw new IOException("Invalid encoding of EDIPartyName");
-
-        for (int i = 0; i < len; i++) {
-            DerValue opt = seq[i];
-            if (opt.isContextSpecific(TAG_ASSIGNER) &&
-                !opt.isConstructed()) {
-                if (assigner != null)
-                    throw new IOException("Duplicate nameAssigner found in"
-                                          + " EDIPartyName");
-                opt = opt.data.getDerValue();
-                assigner = opt.getAsString();
-            }
-            if (opt.isContextSpecific(TAG_PARTYNAME) &&
-                !opt.isConstructed()) {
-                if (party != null)
-                    throw new IOException("Duplicate partyName found in"
-                                          + " EDIPartyName");
-                opt = opt.data.getDerValue();
-                party = opt.getAsString();
-            }
+        if (derValue.tag != DerValue.tag_Sequence) {
+            throw new IOException("Invalid encoding of EDIPartyName.");
         }
+        var v = derValue.data.getOptionalExplicitContextSpecific(TAG_ASSIGNER);
+        if (v.isPresent()) {
+            assigner = v.get().getAsString();
+        }
+        // party is in fact not OPTIONAL
+        v = derValue.data.getOptionalExplicitContextSpecific(TAG_PARTYNAME);
+        if (v.isPresent()) {
+            party = v.get().getAsString();
+        } else {
+            throw new IOException("party must be present");
+        }
+        derValue.data.atEnd();
     }
 
     /**

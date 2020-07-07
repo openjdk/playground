@@ -269,25 +269,14 @@ abstract class PBES2Parameters extends AlgorithmParametersSpi {
         }
         iCount = pBKDF2_params.data.getInteger();
 
-        DerValue prf = null;
         // keyLength INTEGER (1..MAX) OPTIONAL,
-        if (pBKDF2_params.data.available() > 0) {
-            DerValue keyLength = pBKDF2_params.data.getDerValue();
-            if (keyLength.tag == DerValue.tag_Integer) {
-                keysize = keyLength.getInteger() * 8; // keysize (in bits)
-            } else {
-                // Should be the prf
-                prf = keyLength;
-            }
+        if (pBKDF2_params.data.seeOptional(DerValue.tag_Integer)) {
+            keysize = pBKDF2_params.data.getInteger() * 8; // keysize (in bits)
         }
         // prf AlgorithmIdentifier {{PBKDF2-PRFs}} DEFAULT algid-hmacWithSHA1
         String kdfAlgo = "HmacSHA1";
-        if (prf == null) {
-            if (pBKDF2_params.data.available() > 0) {
-                prf = pBKDF2_params.data.getDerValue();
-            }
-        }
-        if (prf != null) {
+        if (pBKDF2_params.data.available() > 0) {
+            DerValue prf = pBKDF2_params.data.getDerValue();
             kdfAlgo_OID = prf.data.getOID();
             KnownOIDs o = KnownOIDs.findMatch(kdfAlgo_OID.toString());
             if (o == null || (!o.stdName().equals("HmacSHA1") &&
@@ -300,15 +289,10 @@ abstract class PBES2Parameters extends AlgorithmParametersSpi {
                         + "derivation function");
             }
             kdfAlgo = o.stdName();
-
-            if (prf.data.available() != 0) {
-                // parameter is 'NULL' for all HmacSHA KDFs
-                DerValue parameter = prf.data.getDerValue();
-                if (parameter.tag != DerValue.tag_Null) {
-                    throw new IOException("PBE parameter parsing error: "
-                            + "not an ASN.1 NULL tag");
-                }
+            if (prf.data.seeOptional(t -> t == DerValue.tag_Null)) {
+                prf.data.skipDerValue();
             }
+            prf.data.atEnd();
         }
 
         return kdfAlgo;

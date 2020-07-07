@@ -266,6 +266,14 @@ public class PKCS7 {
         }
     }
 
+
+    //    SignedData ::= SEQUENCE {
+    //        version CMSVersion,
+    //        digestAlgorithms DigestAlgorithmIdentifiers,
+    //        encapContentInfo EncapsulatedContentInfo,
+    //        certificates [0] IMPLICIT CertificateSet OPTIONAL,
+    //        crls [1] IMPLICIT RevocationInfoChoices OPTIONAL,
+    //        signerInfos SignerInfos }
     private void parseSignedData(DerValue val)
         throws ParsingException, IOException {
 
@@ -305,7 +313,7 @@ public class PKCS7 {
          * check if certificates (implicit tag) are provided
          * (certificates are OPTIONAL)
          */
-        if ((byte)(dis.peekByte()) == (byte)0xA0) {
+        if (dis.seeOptionalContextSpecific(0)) {
             DerValue[] certVals = dis.getSet(2, true);
 
             len = certVals.length;
@@ -350,7 +358,7 @@ public class PKCS7 {
         }
 
         // check if crls (implicit tag) are provided (crls are OPTIONAL)
-        if ((byte)(dis.peekByte()) == (byte)0xA1) {
+        if (dis.seeOptionalContextSpecific(1)) {
             DerValue[] crlVals = dis.getSet(1, true);
 
             len = crlVals.length;

@@ -104,16 +104,16 @@ public class PolicyInformation {
             throw new IOException("Invalid encoding of PolicyInformation");
         }
         policyIdentifier = new CertificatePolicyId(val.data.getDerValue());
-        if (val.data.available() != 0) {
+        if (val.data.seeOptional(DerValue.tag_Sequence)) {
             policyQualifiers = new LinkedHashSet<PolicyQualifierInfo>();
             DerValue opt = val.data.getDerValue();
-            if (opt.tag != DerValue.tag_Sequence)
-                throw new IOException("Invalid encoding of PolicyInformation");
-            if (opt.data.available() == 0)
+            if (opt.data.available() == 0) {
                 throw new IOException("No data available in policyQualifiers");
-            while (opt.data.available() != 0)
+            }
+            while (opt.data.available() != 0) {
                 policyQualifiers.add(new PolicyQualifierInfo
                         (opt.data.getDerValue().toByteArray()));
+            }
         } else {
             policyQualifiers = Collections.emptySet();
         }

@@ -71,17 +71,6 @@ public class CertificateVersion implements CertAttrSet<String> {
         return(version);
     }
 
-    // Construct the class from the passed DerValue
-    private void construct(DerValue derVal) throws IOException {
-        if (derVal.isConstructed() && derVal.isContextSpecific()) {
-            derVal = derVal.data.getDerValue();
-            version = derVal.getInteger();
-            if (derVal.data.available() != 0) {
-                throw new IOException("X.509 version, bad format");
-            }
-        }
-    }
-
     /**
      * The default constructor for this class,
      *  sets the version to 0 (i.e. X.509 version 1).
@@ -105,44 +94,6 @@ public class CertificateVersion implements CertAttrSet<String> {
             throw new IOException("X.509 Certificate version " +
                                    version + " not supported.\n");
         }
-    }
-
-    /**
-     * Create the object, decoding the values from the passed DER stream.
-     *
-     * @param in the DerInputStream to read the CertificateVersion from.
-     * @exception IOException on decoding errors.
-     */
-    public CertificateVersion(DerInputStream in) throws IOException {
-        version = V1;
-        DerValue derVal = in.getDerValue();
-
-        construct(derVal);
-    }
-
-    /**
-     * Create the object, decoding the values from the passed stream.
-     *
-     * @param in the InputStream to read the CertificateVersion from.
-     * @exception IOException on decoding errors.
-     */
-    public CertificateVersion(InputStream in) throws IOException {
-        version = V1;
-        DerValue derVal = new DerValue(in);
-
-        construct(derVal);
-    }
-
-    /**
-     * Create the object, decoding the values from the passed DerValue.
-     *
-     * @param val the Der encoded value.
-     * @exception IOException on decoding errors.
-     */
-    public CertificateVersion(DerValue val) throws IOException {
-        version = V1;
-
-        construct(val);
     }
 
     /**
