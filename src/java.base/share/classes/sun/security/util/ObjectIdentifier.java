@@ -217,6 +217,16 @@ public final class ObjectIdentifier implements Serializable {
         }
     }
 
+    public ObjectIdentifier(byte[] data, int start, int end) throws IOException {
+        encoding = Arrays.copyOfRange(data, start, end);
+        check(encoding);
+    }
+
+    ObjectIdentifier(ByteArrayInputStream in) throws IOException {
+        encoding = in.readAllBytes();
+        check(encoding);
+    }
+
     /**
      * Constructor, from an ASN.1 encoded input stream.
      * Validity check NOT included.
@@ -230,46 +240,7 @@ public final class ObjectIdentifier implements Serializable {
      * @exception IOException indicates a decoding error
      */
     public ObjectIdentifier(DerInputStream in) throws IOException {
-        byte    type_id;
-        int     bufferEnd;
-
-        /*
-         * Object IDs are a "universal" type, and their tag needs only
-         * one byte of encoding.  Verify that the tag of this datum
-         * is that of an object ID.
-         *
-         * Then get and check the length of the ID's encoding.  We set
-         * up so that we can use in.available() to check for the end of
-         * this value in the data stream.
-         */
-        type_id = (byte)in.getByte();
-        if (type_id != DerValue.tag_ObjectId)
-            throw new IOException (
-                "ObjectIdentifier() -- data isn't an object ID"
-                + " (tag = " +  type_id + ")"
-                );
-
-        int len = in.getDefiniteLength();
-        if (len > in.available()) {
-            throw new IOException("ObjectIdentifier() -- length exceeds" +
-                    "data available.  Length: " + len + ", Available: " +
-                    in.available());
-        }
-        encoding = new byte[len];
-        in.getBytes(encoding);
-        check(encoding);
-    }
-
-    /*
-     * Constructor, from the rest of a DER input buffer;
-     * the tag and length have been removed/verified
-     * Validity check NOT included.
-     */
-    ObjectIdentifier(DerInputBuffer buf) throws IOException {
-        DerInputStream in = new DerInputStream(buf);
-        encoding = new byte[in.available()];
-        in.getBytes(encoding);
-        check(encoding);
+        encoding = in.getDerValue().getOID().encoding;
     }
 
     private void init(int[] components, int length) {
