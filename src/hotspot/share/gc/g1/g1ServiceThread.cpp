@@ -121,12 +121,12 @@ void G1ServiceThread::stop_service() {
   _monitor.notify();
 }
 
-class G1ServiceClosure : public HeapRegionClosure {
+class G1YoungRemSetSamplingClosure : public HeapRegionClosure {
   SuspendibleThreadSetJoiner* _sts;
   size_t _regions_visited;
   size_t _sampled_rs_length;
 public:
-  G1ServiceClosure(SuspendibleThreadSetJoiner* sts) :
+  G1YoungRemSetSamplingClosure(SuspendibleThreadSetJoiner* sts) :
     HeapRegionClosure(), _sts(sts), _regions_visited(0), _sampled_rs_length(0) { }
 
   virtual bool do_heap_region(HeapRegion* r) {
@@ -159,7 +159,7 @@ void G1ServiceThread::sample_young_list_rs_length() {
   G1Policy* policy = g1h->policy();
 
   if (policy->use_adaptive_young_list_length()) {
-    G1ServiceClosure cl(&sts);
+    G1YoungRemSetSamplingClosure cl(&sts);
 
     G1CollectionSet* g1cs = g1h->collection_set();
     g1cs->iterate(&cl);

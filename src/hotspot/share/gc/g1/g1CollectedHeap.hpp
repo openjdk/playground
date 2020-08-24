@@ -154,7 +154,7 @@ class G1CollectedHeap : public CollectedHeap {
   friend class G1CheckRegionAttrTableClosure;
 
 private:
-  G1ServiceThread* _young_gen_sampling_thread;
+  G1ServiceThread* _service_thread;
 
   WorkGang* _workers;
   G1CardTable* _card_table;
@@ -545,7 +545,7 @@ private:
   void verify_numa_regions(const char* desc);
 
 public:
-  G1ServiceThread* sampling_thread() const { return _young_gen_sampling_thread; }
+  G1ServiceThread* service_thread() const { return _service_thread; }
 
   WorkGang* workers() const { return _workers; }
 
@@ -963,7 +963,7 @@ public:
 
 private:
   jint initialize_concurrent_refinement();
-  jint initialize_young_gen_sampling_thread();
+  jint initialize_service_thread();
 public:
   // Initialize the G1CollectedHeap to have the initial and
   // maximum sizes and remembered and barrier sets
