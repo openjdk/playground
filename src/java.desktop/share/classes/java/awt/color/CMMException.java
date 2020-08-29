@@ -42,6 +42,7 @@ public class CMMException extends java.lang.RuntimeException {
 
     /**
      * Use serialVersionUID from JDK 1.2 for interoperability.
+     * Make some change to make jcheck happy.
      */
     private static final long serialVersionUID = 5775558044142994965L;
 
