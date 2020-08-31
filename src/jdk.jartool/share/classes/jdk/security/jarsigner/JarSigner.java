@@ -952,7 +952,7 @@ public final class JarSigner {
         int perms = JUZFA.getPosixPerms(ze);
         if (!posixPermsDetected && perms != -1) {
             posixPermsDetected = true;
-            Event.report(Event.ReporterCategory.POSIXPERMS, "detected");
+            Event.report(Event.ReporterCategory.POSIXPERMS, "true");
         }
         JUZFA.setPosixPerms(ze2, perms);
         if (ze.getMethod() == ZipEntry.STORED) {

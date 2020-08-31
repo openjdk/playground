@@ -38,8 +38,8 @@
  * use and update data from a spread sheet, flat file, or any other tabular
  * data source.
  *
- * <h2>What the JDBC 4.3 API Includes</h2>
- * The JDBC 4.3 API includes both
+ * <h2>What the JDBC&trade; 4.4 API Includes</h2>
+ * The JDBC&trade; 4.3 API includes both
  * the {@code java.sql} package, referred to as the JDBC core API,
  * and the {@code javax.sql} package, referred to as the JDBC Optional
  * Package API. This complete JDBC API

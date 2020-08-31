@@ -73,7 +73,7 @@ public class PosixPermissionsTest {
     private static Set<PosixFilePermission> permsSet;
     private static String expectedJarPerms;
     private static final String POSIXWARNING = "POSIX file permission attributes detected. " +
-        "These attributes are ignored when signing and are not protected by the signature.";
+        "Note that these attributes are unsigned and not protected by the signature.";
 
     public static void main(String[] args) throws Exception {
         if (!FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
