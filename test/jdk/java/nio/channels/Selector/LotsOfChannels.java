@@ -26,6 +26,7 @@
  * @summary Tests that Windows Selector can use more than 63 channels
  * @run main LotsOfChannels
  * @run main/othervm -Dsun.nio.ch.maxUpdateArraySize=64 LotsOfChannels
+ * @run main/othervm -Dsun.nio.ch.maxUpdateArraySize=64 LotsOfChannels
  * @author kladko
  */
 
