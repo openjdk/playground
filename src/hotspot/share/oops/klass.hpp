@@ -117,6 +117,9 @@ class Klass : public Metadata {
   // Klass identifier used to implement devirtualized oop closure dispatching.
   const KlassID _id;
 
+  // vtable length
+  int _vtable_len;
+
   // The fields _super_check_offset, _secondary_super_cache, _secondary_supers
   // and _primary_supers all help make fast subtype checks.  See big discussion
   // in doc/server_compiler/checktype.txt
@@ -136,7 +139,7 @@ class Klass : public Metadata {
   // Ordered list of all primary supertypes
   Klass*      _primary_supers[_primary_super_limit];
   // java/lang/Class instance mirroring this class
-  OopHandle _java_mirror;
+  OopHandle   _java_mirror;
   // Superclass
   Klass*      _super;
   // First subclass (NULL if none); _subklass->next_sibling() is next one
@@ -162,9 +165,6 @@ class Klass : public Metadata {
   markWord _prototype_header;   // Used when biased locking is both enabled and disabled for this type
   jint     _biased_lock_revocation_count;
 
-  // vtable length
-  int _vtable_len;
-
 private:
   // This is an index into FileMapHeader::_shared_path_table[], to
   // associate this class with the JAR file where it's loaded from during
@@ -176,9 +176,11 @@ private:
   // Flags of the current shared class.
   u2     _shared_class_flags;
   enum {
-    _has_raw_archived_mirror = 1
+    _has_raw_archived_mirror = 1,
+    _archived_lambda_proxy_is_available = 2
   };
 #endif
+
   // The _archived_mirror is set at CDS dump time pointing to the cached mirror
   // in the open archive heap region when archiving java object is supported.
   CDS_JAVA_HEAP_ONLY(narrowOop _archived_mirror;)
@@ -194,12 +196,12 @@ protected:
  public:
   int id() { return _id; }
 
-  enum DefaultsLookupMode { find_defaults, skip_defaults };
-  enum OverpassLookupMode { find_overpass, skip_overpass };
-  enum StaticLookupMode   { find_static,   skip_static };
-  enum PrivateLookupMode  { find_private,  skip_private };
+  enum class DefaultsLookupMode { find, skip };
+  enum class OverpassLookupMode { find, skip };
+  enum class StaticLookupMode   { find, skip };
+  enum class PrivateLookupMode  { find, skip };
 
-  bool is_klass() const volatile { return true; }
+  virtual bool is_klass() const { return true; }
 
   // super() cannot be InstanceKlass* -- Java arrays are covariant, and _super is used
   // to implement that. NB: the _super of "[Ljava/lang/Integer;" is "[Ljava/lang/Number;"
@@ -265,12 +267,11 @@ protected:
   void set_archived_java_mirror_raw(oop m) NOT_CDS_JAVA_HEAP_RETURN; // no GC barrier
 
   // Temporary mirror switch used by RedefineClasses
-  // Both mirrors are on the ClassLoaderData::_handles list already so no
-  // barriers are needed.
-  void set_java_mirror_handle(OopHandle mirror) { _java_mirror = mirror; }
-  OopHandle java_mirror_handle() const          {
-    return _java_mirror;
-  }
+  void replace_java_mirror(oop mirror);
+
+  // Set java mirror OopHandle to NULL for CDS
+  // This leaves the OopHandle in the CLD, but that's ok, you can't release them.
+  void clear_java_mirror_handle() { _java_mirror = OopHandle(); }
 
   // modifier flags
   jint modifier_flags() const          { return _modifier_flags; }
@@ -292,6 +293,7 @@ protected:
 
   void set_next_link(Klass* k) { _next_link = k; }
   Klass* next_link() const { return _next_link; }   // The next klass defined by the class loader.
+  Klass** next_link_addr() { return &_next_link; }
 
   // class loader data
   ClassLoaderData* class_loader_data() const               { return _class_loader_data; }
@@ -313,6 +315,17 @@ protected:
   }
   bool has_raw_archived_mirror() const {
     CDS_ONLY(return (_shared_class_flags & _has_raw_archived_mirror) != 0;)
+    NOT_CDS(return false;)
+  }
+
+  void set_lambda_proxy_is_available() {
+    CDS_ONLY(_shared_class_flags |= _archived_lambda_proxy_is_available;)
+  }
+  void clear_lambda_proxy_is_available() {
+    CDS_ONLY(_shared_class_flags &= ~_archived_lambda_proxy_is_available;)
+  }
+  bool lambda_proxy_is_available() const {
+    CDS_ONLY(return (_shared_class_flags & _archived_lambda_proxy_is_available) != 0;)
     NOT_CDS(return false;)
   }
 
@@ -469,10 +482,10 @@ protected:
   virtual Klass* find_field(Symbol* name, Symbol* signature, fieldDescriptor* fd) const;
   virtual Method* uncached_lookup_method(const Symbol* name, const Symbol* signature,
                                          OverpassLookupMode overpass_mode,
-                                         PrivateLookupMode = find_private) const;
+                                         PrivateLookupMode = PrivateLookupMode::find) const;
  public:
   Method* lookup_method(const Symbol* name, const Symbol* signature) const {
-    return uncached_lookup_method(name, signature, find_overpass);
+    return uncached_lookup_method(name, signature, OverpassLookupMode::find);
   }
 
   // array class with specific rank
@@ -615,6 +628,12 @@ protected:
   void set_has_miranda_methods()        { _access_flags.set_has_miranda_methods(); }
   bool is_shared() const                { return access_flags().is_shared_class(); } // shadows MetaspaceObj::is_shared)()
   void set_is_shared()                  { _access_flags.set_is_shared_class(); }
+  bool is_hidden() const                { return access_flags().is_hidden_class(); }
+  void set_is_hidden()                  { _access_flags.set_is_hidden_class(); }
+  bool is_non_strong_hidden() const     { return access_flags().is_hidden_class() &&
+                                          class_loader_data()->has_class_mirror_holder(); }
+  bool is_box() const                   { return access_flags().is_box_class(); }
+  void set_is_box()                     { _access_flags.set_is_box_class(); }
 
   bool is_cloneable() const;
   void set_is_cloneable();
@@ -624,6 +643,7 @@ protected:
   // prototype markWord. If biased locking is enabled it may further be
   // biasable and have an epoch.
   markWord prototype_header() const      { return _prototype_header; }
+
   // NOTE: once instances of this klass are floating around in the
   // system, this header must only be updated at a safepoint.
   // NOTE 2: currently we only ever set the prototype header to the
@@ -668,6 +688,8 @@ protected:
   // klass name
   Symbol* name() const                   { return _name; }
   void set_name(Symbol* n);
+
+  virtual void release_C_heap_structures();
 
  public:
   // jvm support

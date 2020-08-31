@@ -328,7 +328,7 @@ Method* LinkResolver::lookup_method_in_klasses(const LinkInfo& link_info,
   Symbol* signature = link_info.signature();
 
   // Ignore overpasses so statics can be found during resolution
-  Method* result = klass->uncached_lookup_method(name, signature, Klass::skip_overpass);
+  Method* result = klass->uncached_lookup_method(name, signature, Klass::OverpassLookupMode::skip);
 
   if (klass->is_array_klass()) {
     // Only consider klass and super klass for arrays
@@ -339,7 +339,7 @@ Method* LinkResolver::lookup_method_in_klasses(const LinkInfo& link_info,
 
   // JDK 8, JVMS 5.4.3.4: Interface method resolution should
   // ignore static and non-public methods of java.lang.Object,
-  // like clone, finalize, registerNatives.
+  // like clone and finalize.
   if (in_imethod_resolve &&
       result != NULL &&
       ik->is_interface() &&
@@ -377,11 +377,11 @@ Method* LinkResolver::lookup_instance_method_in_klasses(Klass* klass,
                                                         Symbol* name,
                                                         Symbol* signature,
                                                         Klass::PrivateLookupMode private_mode, TRAPS) {
-  Method* result = klass->uncached_lookup_method(name, signature, Klass::find_overpass, private_mode);
+  Method* result = klass->uncached_lookup_method(name, signature, Klass::OverpassLookupMode::find, private_mode);
 
   while (result != NULL && result->is_static() && result->method_holder()->super() != NULL) {
     Klass* super_klass = result->method_holder()->super();
-    result = super_klass->uncached_lookup_method(name, signature, Klass::find_overpass, private_mode);
+    result = super_klass->uncached_lookup_method(name, signature, Klass::OverpassLookupMode::find, private_mode);
   }
 
   if (klass->is_array_klass()) {
@@ -410,8 +410,10 @@ int LinkResolver::vtable_index_of_interface_method(Klass* klass,
   // First check in default method array
   if (!resolved_method->is_abstract() && ik->default_methods() != NULL) {
     int index = InstanceKlass::find_method_index(ik->default_methods(),
-                                                 name, signature, Klass::find_overpass,
-                                                 Klass::find_static, Klass::find_private);
+                                                 name, signature,
+                                                 Klass::OverpassLookupMode::find,
+                                                 Klass::StaticLookupMode::find,
+                                                 Klass::PrivateLookupMode::find);
     if (index >= 0 ) {
       vtable_index = ik->default_vtable_indices()->at(index);
     }
@@ -430,7 +432,7 @@ Method* LinkResolver::lookup_method_in_interfaces(const LinkInfo& cp_info) {
   // Specify 'true' in order to skip default methods when searching the
   // interfaces.  Function lookup_method_in_klasses() already looked for
   // the method in the default methods table.
-  return ik->lookup_method_in_all_interfaces(cp_info.name(), cp_info.signature(), Klass::skip_defaults);
+  return ik->lookup_method_in_all_interfaces(cp_info.name(), cp_info.signature(), Klass::DefaultsLookupMode::skip);
 }
 
 Method* LinkResolver::lookup_polymorphic_method(const LinkInfo& link_info,
@@ -535,6 +537,21 @@ Method* LinkResolver::lookup_polymorphic_method(const LinkInfo& link_info,
   return NULL;
 }
 
+static void print_nest_host_error_on(stringStream* ss, Klass* ref_klass, Klass* sel_klass, TRAPS) {
+  assert(ref_klass->is_instance_klass(), "must be");
+  assert(sel_klass->is_instance_klass(), "must be");
+  InstanceKlass* ref_ik = InstanceKlass::cast(ref_klass);
+  InstanceKlass* sel_ik = InstanceKlass::cast(sel_klass);
+  const char* nest_host_error_1 = ref_ik->nest_host_error(THREAD);
+  const char* nest_host_error_2 = sel_ik->nest_host_error(THREAD);
+  if (nest_host_error_1 != NULL || nest_host_error_2 != NULL) {
+    ss->print(", (%s%s%s)",
+              (nest_host_error_1 != NULL) ? nest_host_error_1 : "",
+              (nest_host_error_1 != NULL && nest_host_error_2 != NULL) ? ", " : "",
+              (nest_host_error_2 != NULL) ? nest_host_error_2 : "");
+  }
+}
+
 void LinkResolver::check_method_accessability(Klass* ref_klass,
                                               Klass* resolved_klass,
                                               Klass* sel_klass,
@@ -567,24 +584,34 @@ void LinkResolver::check_method_accessability(Klass* ref_klass,
                                                      sel_klass,
                                                      flags,
                                                      true, false, CHECK);
-  // Any existing exceptions that may have been thrown, for example LinkageErrors
-  // from nest-host resolution, have been allowed to propagate.
+  // Any existing exceptions that may have been thrown
+  // have been allowed to propagate.
   if (!can_access) {
     ResourceMark rm(THREAD);
+    stringStream ss;
     bool same_module = (sel_klass->module() == ref_klass->module());
-    Exceptions::fthrow(
-      THREAD_AND_LOCATION,
-      vmSymbols::java_lang_IllegalAccessError(),
-      "class %s tried to access %s%s%smethod '%s' (%s%s%s)",
-      ref_klass->external_name(),
-      sel_method->is_abstract()  ? "abstract "  : "",
-      sel_method->is_protected() ? "protected " : "",
-      sel_method->is_private()   ? "private "   : "",
-      sel_method->external_name(),
-      (same_module) ? ref_klass->joint_in_module_of_loader(sel_klass) : ref_klass->class_in_module_of_loader(),
-      (same_module) ? "" : "; ",
-      (same_module) ? "" : sel_klass->class_in_module_of_loader()
-    );
+    ss.print("class %s tried to access %s%s%smethod '%s' (%s%s%s)",
+             ref_klass->external_name(),
+             sel_method->is_abstract()  ? "abstract "  : "",
+             sel_method->is_protected() ? "protected " : "",
+             sel_method->is_private()   ? "private "   : "",
+             sel_method->external_name(),
+             (same_module) ? ref_klass->joint_in_module_of_loader(sel_klass) : ref_klass->class_in_module_of_loader(),
+             (same_module) ? "" : "; ",
+             (same_module) ? "" : sel_klass->class_in_module_of_loader()
+             );
+
+    // For private access see if there was a problem with nest host
+    // resolution, and if so report that as part of the message.
+    if (sel_method->is_private()) {
+      print_nest_host_error_on(&ss, ref_klass, sel_klass, THREAD);
+    }
+
+    Exceptions::fthrow(THREAD_AND_LOCATION,
+                       vmSymbols::java_lang_IllegalAccessError(),
+                       "%s",
+                       ss.as_string()
+                       );
     return;
   }
 }
@@ -639,7 +666,9 @@ void LinkResolver::check_method_loader_constraints(const LinkInfo& link_info,
 
   ResourceMark rm(THREAD);
   Symbol* failed_type_symbol =
-    SystemDictionary::check_signature_loaders(link_info.signature(), current_loader,
+    SystemDictionary::check_signature_loaders(link_info.signature(),
+                                              /*klass_being_linked*/ NULL, // We are not linking class
+                                              current_loader,
                                               resolved_loader, true, CHECK);
   if (failed_type_symbol != NULL) {
     Klass* current_class = link_info.current_klass();
@@ -675,6 +704,7 @@ void LinkResolver::check_field_loader_constraints(Symbol* field, Symbol* sig,
   ResourceMark rm(THREAD);  // needed for check_signature_loaders
   Symbol* failed_type_symbol =
     SystemDictionary::check_signature_loaders(sig,
+                                              /*klass_being_linked*/ NULL, // We are not linking class
                                               ref_loader, sel_loader,
                                               false,
                                               CHECK);
@@ -903,19 +933,27 @@ void LinkResolver::check_field_accessability(Klass* ref_klass,
   if (!can_access) {
     bool same_module = (sel_klass->module() == ref_klass->module());
     ResourceMark rm(THREAD);
-    Exceptions::fthrow(
-      THREAD_AND_LOCATION,
-      vmSymbols::java_lang_IllegalAccessError(),
-      "class %s tried to access %s%sfield %s.%s (%s%s%s)",
-      ref_klass->external_name(),
-      fd.is_protected() ? "protected " : "",
-      fd.is_private()   ? "private "   : "",
-      sel_klass->external_name(),
-      fd.name()->as_C_string(),
-      (same_module) ? ref_klass->joint_in_module_of_loader(sel_klass) : ref_klass->class_in_module_of_loader(),
-      (same_module) ? "" : "; ",
-      (same_module) ? "" : sel_klass->class_in_module_of_loader()
-    );
+    stringStream ss;
+    ss.print("class %s tried to access %s%sfield %s.%s (%s%s%s)",
+             ref_klass->external_name(),
+             fd.is_protected() ? "protected " : "",
+             fd.is_private()   ? "private "   : "",
+             sel_klass->external_name(),
+             fd.name()->as_C_string(),
+             (same_module) ? ref_klass->joint_in_module_of_loader(sel_klass) : ref_klass->class_in_module_of_loader(),
+             (same_module) ? "" : "; ",
+             (same_module) ? "" : sel_klass->class_in_module_of_loader()
+             );
+    // For private access see if there was a problem with nest host
+    // resolution, and if so report that as part of the message.
+    if (fd.is_private()) {
+      print_nest_host_error_on(&ss, ref_klass, sel_klass, THREAD);
+    }
+    Exceptions::fthrow(THREAD_AND_LOCATION,
+                       vmSymbols::java_lang_IllegalAccessError(),
+                       "%s",
+                       ss.as_string()
+                       );
     return;
   }
 }
@@ -1051,7 +1089,7 @@ void LinkResolver::resolve_static_call(CallInfo& result,
     // Use updated LinkInfo to reresolve with resolved method holder
     LinkInfo new_info(resolved_klass, link_info.name(), link_info.signature(),
                       link_info.current_klass(),
-                      link_info.check_access() ? LinkInfo::needs_access_check : LinkInfo::skip_access_check);
+                      link_info.check_access() ? LinkInfo::AccessCheck::required : LinkInfo::AccessCheck::skip);
     resolved_method = linktime_resolve_static_method(new_info, CHECK);
   }
 
@@ -1200,7 +1238,7 @@ void LinkResolver::runtime_resolve_special_method(CallInfo& result,
       Method* instance_method = lookup_instance_method_in_klasses(super_klass,
                                                      resolved_method->name(),
                                                      resolved_method->signature(),
-                                                     Klass::find_private, CHECK);
+                                                     Klass::PrivateLookupMode::find, CHECK);
       sel_method = methodHandle(THREAD, instance_method);
 
       // check if found
@@ -1442,7 +1480,7 @@ void LinkResolver::runtime_resolve_interface_method(CallInfo& result,
     Method* method = lookup_instance_method_in_klasses(recv_klass,
                                                        resolved_method->name(),
                                                        resolved_method->signature(),
-                                                       Klass::skip_private, CHECK);
+                                                       Klass::PrivateLookupMode::skip, CHECK);
     selected_method = methodHandle(THREAD, method);
 
     if (selected_method.is_null() && !check_null_and_abstract) {

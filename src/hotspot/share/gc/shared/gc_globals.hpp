@@ -167,16 +167,12 @@
   product(bool, UseZGC, false,                                              \
           "Use the Z garbage collector")                                    \
                                                                             \
-  experimental(bool, UseShenandoahGC, false,                                \
+  product(bool, UseShenandoahGC, false,                                     \
           "Use the Shenandoah garbage collector")                           \
                                                                             \
   product(uint, ParallelGCThreads, 0,                                       \
           "Number of parallel threads parallel gc will use")                \
           constraint(ParallelGCThreadsConstraintFunc,AfterErgo)             \
-                                                                            \
-  diagnostic(bool, UseSemaphoreGCThreadsSynchronization, true,              \
-            "Use semaphore synchronization for the GC Threads, "            \
-            "instead of synchronization based on mutexes")                  \
                                                                             \
   product(bool, UseDynamicNumberOfGCThreads, true,                          \
           "Dynamically choose the number of threads up to a maximum of "    \

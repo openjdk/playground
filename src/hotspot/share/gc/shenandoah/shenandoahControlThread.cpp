@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2019, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2013, 2020, Red Hat, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,15 +26,16 @@
 
 #include "gc/shenandoah/shenandoahConcurrentMark.inline.hpp"
 #include "gc/shenandoah/shenandoahCollectorPolicy.hpp"
+#include "gc/shenandoah/shenandoahControlThread.hpp"
 #include "gc/shenandoah/shenandoahFreeSet.hpp"
 #include "gc/shenandoah/shenandoahPhaseTimings.hpp"
 #include "gc/shenandoah/shenandoahHeap.inline.hpp"
-#include "gc/shenandoah/shenandoahHeuristics.hpp"
 #include "gc/shenandoah/shenandoahMonitoringSupport.hpp"
-#include "gc/shenandoah/shenandoahControlThread.hpp"
+#include "gc/shenandoah/shenandoahRootProcessor.inline.hpp"
 #include "gc/shenandoah/shenandoahUtils.hpp"
 #include "gc/shenandoah/shenandoahVMOperations.hpp"
 #include "gc/shenandoah/shenandoahWorkerPolicy.hpp"
+#include "gc/shenandoah/heuristics/shenandoahHeuristics.hpp"
 #include "memory/iterator.hpp"
 #include "memory/universe.hpp"
 #include "runtime/atomic.hpp"
@@ -49,9 +50,12 @@ ShenandoahControlThread::ShenandoahControlThread() :
   _allocs_seen(0) {
 
   reset_gc_id();
-  create_and_start(ShenandoahCriticalControlThreadPriority ? CriticalPriority : NearMaxPriority);
+  create_and_start();
   _periodic_task.enroll();
   _periodic_satb_flush_task.enroll();
+  if (ShenandoahPacing) {
+    _periodic_pacer_notify_task.enroll();
+  }
 }
 
 ShenandoahControlThread::~ShenandoahControlThread() {
@@ -65,6 +69,11 @@ void ShenandoahPeriodicTask::task() {
 
 void ShenandoahPeriodicSATBFlushTask::task() {
   ShenandoahHeap::heap()->force_satb_flush_all_threads();
+}
+
+void ShenandoahPeriodicPacerNotify::task() {
+  assert(ShenandoahPacing, "Should not be here otherwise");
+  ShenandoahHeap::heap()->pacer()->notify_waiters();
 }
 
 void ShenandoahControlThread::run_service() {
@@ -165,8 +174,8 @@ void ShenandoahControlThread::run_service() {
     }
 
     // Blow all soft references on this cycle, if handling allocation failure,
-    // or we are requested to do so unconditionally.
-    if (alloc_failure_pending || ShenandoahAlwaysClearSoftRefs) {
+    // either implicit or explicit GC request,  or we are requested to do so unconditionally.
+    if (alloc_failure_pending || implicit_gc_requested || explicit_gc_requested || ShenandoahAlwaysClearSoftRefs) {
       heap->soft_ref_policy()->set_should_clear_all_soft_refs(true);
     }
 
@@ -226,6 +235,9 @@ void ShenandoahControlThread::run_service() {
         // global soft refs policy, and we better report it every time heap
         // usage goes down.
         Universe::update_heap_info_at_gc();
+
+        // Signal that we have completed a visit to all live objects.
+        Universe::heap()->record_whole_heap_examined_timestamp();
       }
 
       // Disable forced counters update, and update counters one more time
@@ -240,6 +252,28 @@ void ShenandoahControlThread::run_service() {
       if (heap->unload_classes()) {
         heuristics->clear_metaspace_oom();
       }
+
+      // Commit worker statistics to cycle data
+      heap->phase_timings()->flush_par_workers_to_cycle();
+      if (ShenandoahPacing) {
+        heap->pacer()->flush_stats_to_cycle();
+      }
+
+      // Print GC stats for current cycle
+      {
+        LogTarget(Info, gc, stats) lt;
+        if (lt.is_enabled()) {
+          ResourceMark rm;
+          LogStream ls(lt);
+          heap->phase_timings()->print_cycle_on(&ls);
+          if (ShenandoahPacing) {
+            heap->pacer()->print_cycle_on(&ls);
+          }
+        }
+      }
+
+      // Commit statistics to globals
+      heap->phase_timings()->flush_cycle_to_global();
 
       // Print Metaspace change following GC (if logging is enabled).
       MetaspaceUtils::print_metaspace_change(meta_sizes);
@@ -264,6 +298,7 @@ void ShenandoahControlThread::run_service() {
                              current :
                              current - (ShenandoahUncommitDelay / 1000.0);
       service_uncommit(shrink_before);
+      heap->phase_timings()->flush_cycle_to_global();
       last_shrink_time = current;
     }
 
@@ -347,15 +382,22 @@ void ShenandoahControlThread::service_concurrent_normal_cycle(GCCause::Cause cau
   heap->vmop_entry_final_mark();
 
   // Process weak roots that might still point to regions that would be broken by cleanup
-  heap->entry_weak_roots();
+  if (heap->is_concurrent_weak_root_in_progress()) {
+    heap->entry_weak_roots();
+  }
 
   // Final mark might have reclaimed some immediate garbage, kick cleanup to reclaim
   // the space. This would be the last action if there is nothing to evacuate.
-  heap->entry_cleanup();
+  heap->entry_cleanup_early();
 
   {
     ShenandoahHeapLocker locker(heap->lock());
     heap->free_set()->log_status();
+  }
+
+  // Perform concurrent class unloading
+  if (heap->is_concurrent_weak_root_in_progress()) {
+    heap->entry_class_unloading();
   }
 
   // Processing strong roots
@@ -381,7 +423,13 @@ void ShenandoahControlThread::service_concurrent_normal_cycle(GCCause::Cause cau
     heap->vmop_entry_final_updaterefs();
 
     // Update references freed up collection set, kick the cleanup to reclaim the space.
-    heap->entry_cleanup();
+    heap->entry_cleanup_complete();
+  } else {
+    // Concurrent weak/strong root flags are unset concurrently. We depend on updateref GC safepoints
+    // to ensure the changes are visible to all mutators before gc cycle is completed.
+    // In case of no evacuation, updateref GC safepoints are skipped. Therefore, we will need
+    // to perform thread handshake to ensure their consistences.
+    heap->entry_rendezvous_roots();
   }
 
   // Cycle is complete
@@ -486,13 +534,15 @@ void ShenandoahControlThread::handle_requested_gc(GCCause::Cause cause) {
   // comes very late in the already running cycle, it would miss lots of new
   // opportunities for cleanup that were made available before the caller
   // requested the GC.
-  size_t required_gc_id = get_gc_id() + 1;
 
   MonitorLocker ml(&_gc_waiters_lock);
-  while (get_gc_id() < required_gc_id) {
+  size_t current_gc_id = get_gc_id();
+  size_t required_gc_id = current_gc_id + 1;
+  while (current_gc_id < required_gc_id) {
     _gc_requested.set();
     _requested_gc_cause = cause;
     ml.wait();
+    current_gc_id = get_gc_id();
   }
 }
 

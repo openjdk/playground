@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.NestingKind;
 import javax.tools.JavaFileManager;
 
 import com.sun.tools.javac.code.*;
@@ -160,6 +161,8 @@ public class Check {
 
         allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
+        allowSealed = (!preview.isPreview(Feature.SEALED_CLASSES) || preview.isEnabled()) &&
+                Feature.SEALED_CLASSES.allowedInSource(source);
     }
 
     /** Character for synthetic names
@@ -194,6 +197,10 @@ public class Check {
     /** Are records allowed
      */
     private final boolean allowRecords;
+
+    /** Are sealed classes allowed
+     */
+    private final boolean allowSealed;
 
 /* *************************************************************************
  * Errors and Warnings
@@ -1211,38 +1218,35 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
-                if ((flags & RECORD) != 0) {
-                    implicit = STATIC;
+                boolean implicitlyStatic = !sym.isAnonymous() &&
+                        ((flags & RECORD) != 0 || (flags & ENUM) != 0 || (flags & INTERFACE) != 0);
+                boolean staticOrImplicitlyStatic = (flags & STATIC) != 0 || implicitlyStatic;
+                mask = staticOrImplicitlyStatic && allowRecords && (flags & ANNOTATION) == 0 ? StaticLocalFlags : LocalClassFlags;
+                implicit = implicitlyStatic ? STATIC : implicit;
+                if (staticOrImplicitlyStatic) {
                     if (sym.owner.kind == TYP) {
-                        log.error(pos, Errors.RecordDeclarationNotAllowedInInnerClasses);
+                        log.error(pos, Errors.StaticDeclarationNotAllowedInInnerClasses);
                     }
                 }
-                if ((sym.owner.flags_field & STATIC) == 0 &&
-                    (flags & ENUM) != 0) {
-                    log.error(pos, Errors.EnumsMustBeStatic);
-                }
             } else if (sym.owner.kind == TYP) {
-                mask = (flags & RECORD) != 0 ? MemberRecordFlags : MemberClassFlags;
+                mask = (flags & RECORD) != 0 ? MemberRecordFlags : ExtendedMemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
-                else if ((flags & ENUM) != 0) {
-                    log.error(pos, Errors.EnumsMustBeStatic);
-                } else if ((flags & RECORD) != 0) {
-                    log.error(pos, Errors.RecordDeclarationNotAllowedInInnerClasses);
+                else if ((flags & ENUM) != 0 || (flags & RECORD) != 0) {
+                    log.error(pos, Errors.StaticDeclarationNotAllowedInInnerClasses);
                 }
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM | RECORD)) != 0 ) implicit = STATIC;
             } else {
-                mask = ClassFlags;
+                mask = ExtendedClassFlags;
             }
             // Interfaces are always ABSTRACT
             if ((flags & INTERFACE) != 0) implicit |= ABSTRACT;
 
             if ((flags & ENUM) != 0) {
-                // enums can't be declared abstract or final
-                mask &= ~(ABSTRACT | FINAL);
+                // enums can't be declared abstract, final, sealed or non-sealed
+                mask &= ~(ABSTRACT | FINAL | SEALED | NON_SEALED);
                 implicit |= implicitEnumFinalFlag(tree);
             }
             if ((flags & RECORD) != 0) {
@@ -1264,7 +1268,7 @@ public class Check {
             }
             else {
                 log.error(pos,
-                          Errors.ModNotAllowedHere(asFlagSet(illegal)));
+                        Errors.ModNotAllowedHere(asFlagSet(illegal)));
             }
         }
         else if ((sym.kind == TYP ||
@@ -1297,7 +1301,13 @@ public class Check {
                  (sym.kind == TYP ||
                   checkDisjoint(pos, flags,
                                 ABSTRACT | NATIVE,
-                                STRICTFP))) {
+                                STRICTFP))
+                 && checkDisjoint(pos, flags,
+                                FINAL,
+                           SEALED | NON_SEALED)
+                 && checkDisjoint(pos, flags,
+                                SEALED,
+                           FINAL | NON_SEALED)) {
             // skip
         }
         return flags & (mask | ~ExtendedStandardFlags) | implicit;
@@ -1337,7 +1347,7 @@ public class Check {
         JCClassDecl cdef = (JCClassDecl) tree;
         for (JCTree defs: cdef.defs) {
             defs.accept(sts);
-            if (sts.specialized) return 0;
+            if (sts.specialized) return allowSealed ? SEALED : 0;
         }
         return FINAL;
     }
@@ -2070,11 +2080,21 @@ public class Check {
      */
     void checkOverride(Env<AttrContext> env, JCMethodDecl tree, MethodSymbol m) {
         ClassSymbol origin = (ClassSymbol)m.owner;
-        if ((origin.flags() & ENUM) != 0 && names.finalize.equals(m.name))
+        if ((origin.flags() & ENUM) != 0 && names.finalize.equals(m.name)) {
             if (m.overrides(syms.enumFinalFinalize, origin, types, false)) {
                 log.error(tree.pos(), Errors.EnumNoFinalize);
                 return;
             }
+        }
+        if (allowRecords && origin.isRecord()) {
+            // let's find out if this is a user defined accessor in which case the @Override annotation is acceptable
+            Optional<? extends RecordComponent> recordComponent = origin.getRecordComponents().stream()
+                    .filter(rc -> rc.accessor == tree.sym && (rc.accessor.flags_field & GENERATED_MEMBER) == 0).findFirst();
+            if (recordComponent.isPresent()) {
+                return;
+            }
+        }
+
         for (Type t = origin.type; t.hasTag(CLASS);
              t = types.supertype(t)) {
             if (t != origin.type) {
@@ -2679,7 +2699,7 @@ public class Check {
                             types.findDescriptorType(t).getParameterTypes().length()) {
                         potentiallyAmbiguous = true;
                     } else {
-                        break;
+                        return;
                     }
                 }
                 args1 = args1.tail;
@@ -2888,10 +2908,9 @@ public class Check {
      */
     private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
         validateAnnotationTree(a);
-        boolean isRecordMember = (s.flags_field & RECORD) != 0 || s.enclClass() != null && s.enclClass().isRecord();
+        boolean isRecordMember = ((s.flags_field & RECORD) != 0 || s.enclClass() != null && s.enclClass().isRecord());
 
-        boolean isRecordField = isRecordMember &&
-                (s.flags_field & (Flags.PRIVATE | Flags.FINAL | Flags.GENERATED_MEMBER | Flags.RECORD)) != 0 &&
+        boolean isRecordField = (s.flags_field & RECORD) != 0 &&
                 declarationTree.hasTag(VARDEF) &&
                 s.owner.kind == TYP;
 
@@ -3807,6 +3826,59 @@ public class Check {
             log.warning(pos,
                         Warnings.AuxiliaryClassAccessedFromOutsideOfItsSourceFile(c, c.sourcefile));
         }
+    }
+
+    /**
+     * Check for a default constructor in an exported package.
+     */
+    void checkDefaultConstructor(ClassSymbol c, DiagnosticPosition pos) {
+        if (lint.isEnabled(LintCategory.MISSING_EXPLICIT_CTOR) &&
+            ((c.flags() & (ENUM | RECORD)) == 0) &&
+            !c.isAnonymous() &&
+            ((c.flags() & (PUBLIC | PROTECTED)) != 0) &&
+            Feature.MODULES.allowedInSource(source)) {
+            NestingKind nestingKind = c.getNestingKind();
+            switch (nestingKind) {
+                case ANONYMOUS,
+                     LOCAL -> {return;}
+                case TOP_LEVEL -> {;} // No additional checks needed
+                case MEMBER -> {
+                    // For nested member classes, all the enclosing
+                    // classes must be public or protected.
+                    Symbol owner = c.owner;
+                    while (owner != null && owner.kind == TYP) {
+                        if ((owner.flags() & (PUBLIC | PROTECTED)) == 0)
+                            return;
+                        owner = owner.owner;
+                    }
+                }
+            }
+
+            // Only check classes in named packages exported by its module
+            PackageSymbol pkg = c.packge();
+            if (!pkg.isUnnamed()) {
+                ModuleSymbol modle = pkg.modle;
+                for (ExportsDirective exportDir : modle.exports) {
+                    // Report warning only if the containing
+                    // package is unconditionally exported
+                    if (exportDir.packge.equals(pkg)) {
+                        if (exportDir.modules == null || exportDir.modules.isEmpty()) {
+                            // Warning may be suppressed by
+                            // annotations; check again for being
+                            // enabled in the deferred context.
+                            deferredLintHandler.report(() -> {
+                                if (lint.isEnabled(LintCategory.MISSING_EXPLICIT_CTOR))
+                                   log.warning(LintCategory.MISSING_EXPLICIT_CTOR,
+                                               pos, Warnings.MissingExplicitCtor(c, pkg, modle));
+                                                       });
+                        } else {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        return;
     }
 
     private class ConversionWarner extends Warner {

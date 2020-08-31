@@ -711,7 +711,7 @@ bool Reflection::is_same_class_package(const Klass* class1, const Klass* class2)
 // Checks that the 'outer' klass has declared 'inner' as being an inner klass. If not,
 // throw an incompatible class change exception
 // If inner_is_member, require the inner to be a member of the outer.
-// If !inner_is_member, require the inner to be unsafe anonymous (a non-member).
+// If !inner_is_member, require the inner to be hidden or unsafe anonymous (non-members).
 // Caller is responsible for figuring out in advance which case must be true.
 void Reflection::check_for_inner_class(const InstanceKlass* outer, const InstanceKlass* inner,
                                        bool inner_is_member, TRAPS) {
@@ -812,8 +812,7 @@ oop Reflection::new_method(const methodHandle& method, bool for_constant_pool_ac
   Handle return_type(THREAD, return_type_oop);
 
   objArrayHandle exception_types = get_exception_types(method, CHECK_NULL);
-
-  if (exception_types.is_null()) return NULL;
+  assert(!exception_types.is_null(), "cannot return null");
 
   Symbol*  method_name = method->name();
   oop name_oop = StringTable::intern(method_name, CHECK_NULL);
@@ -859,7 +858,7 @@ oop Reflection::new_constructor(const methodHandle& method, TRAPS) {
   if (parameter_types.is_null()) return NULL;
 
   objArrayHandle exception_types = get_exception_types(method, CHECK_NULL);
-  if (exception_types.is_null()) return NULL;
+  assert(!exception_types.is_null(), "cannot return null");
 
   const int modifiers = method->access_flags().as_int() & JVM_RECOGNIZED_METHOD_MODIFIERS;
 
@@ -897,6 +896,9 @@ oop Reflection::new_field(fieldDescriptor* fd, TRAPS) {
   java_lang_reflect_Field::set_slot(rh(), fd->index());
   java_lang_reflect_Field::set_name(rh(), name());
   java_lang_reflect_Field::set_type(rh(), type());
+  if (fd->is_trusted_final()) {
+    java_lang_reflect_Field::set_trusted_final(rh());
+  }
   // Note the ACC_ANNOTATION bit, which is a per-class access flag, is never set here.
   java_lang_reflect_Field::set_modifiers(rh(), fd->access_flags().as_int() & JVM_RECOGNIZED_FIELD_MODIFIERS);
   java_lang_reflect_Field::set_override(rh(), false);
