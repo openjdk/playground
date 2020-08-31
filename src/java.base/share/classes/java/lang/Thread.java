@@ -133,7 +133,6 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * or method in this class will cause a {@link NullPointerException} to be
  * thrown.
  *
- * @author  unascribed
  * @see     Runnable
  * @see     Runtime#exit(int)
  * @see     #run()
