@@ -137,7 +137,6 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @see     Runnable
  * @see     Runtime#exit(int)
  * @see     #run()
- * @see     #stop()
  * @since   1.0
  */
 public class Thread implements Runnable {
