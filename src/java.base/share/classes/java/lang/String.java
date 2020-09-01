@@ -2866,7 +2866,7 @@ public final class String
      *
      * @since 12
      */
-    public String indent(int n) {
+    public String stringIndent(int n) {
         if (isEmpty()) {
             return "";
         }
