@@ -51,7 +51,7 @@ public class ExtOptionTest {
                 if (ss.supportedOptions().contains(TCP_QUICKACK)) {
                     ss.setOption(TCP_QUICKACK, true);
                     if (!ss.getOption(TCP_QUICKACK)) {
-                        throw new RuntimeException("Test failed, TCP_QUICKACK should"
+                        throw new RuntimeException("Test failed!!!, TCP_QUICKACK should"
                                 + " have been set");
                     }
                 }
