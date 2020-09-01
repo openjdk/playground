@@ -63,16 +63,6 @@ bool C2Compiler::init_c2_runtime() {
     }
   }
 
-  // Check that runtime and architecture description agree on callee-saved-floats
-  bool callee_saved_floats = false;
-  for( OptoReg::Name i=OptoReg::Name(0); i<OptoReg::Name(_last_Mach_Reg); i = OptoReg::add(i,1) ) {
-    // Is there a callee-saved float or double?
-    if( register_save_policy[i] == 'E' /* callee-saved */ &&
-       (register_save_type[i] == Op_RegF || register_save_type[i] == Op_RegD) ) {
-      callee_saved_floats = true;
-    }
-  }
-
   DEBUG_ONLY( Node::init_NodeProperty(); )
 
   Compile::pd_compiler2_init();
@@ -99,7 +89,7 @@ void C2Compiler::initialize() {
   }
 }
 
-void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, DirectiveSet* directive) {
+void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, bool install_code, DirectiveSet* directive) {
   assert(is_initialized(), "Compiler thread must be initialized");
 
   bool subsume_loads = SubsumeLoads;
@@ -109,7 +99,7 @@ void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, Dir
 
   while (!env->failing()) {
     // Attempt to compile while subsuming loads into machine instructions.
-    Compile C(env, target, entry_bci, subsume_loads, do_escape_analysis, eliminate_boxing, directive);
+    Compile C(env, target, entry_bci, subsume_loads, do_escape_analysis, eliminate_boxing, install_code, directive);
 
     // Check result and retry if appropriate.
     if (C.failure_reason() != NULL) {
@@ -151,7 +141,6 @@ void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, Dir
         continue;  // retry
       }
     }
-
     // print inlining for last compilation only
     C.dump_print_inlining();
 
@@ -621,6 +610,7 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_electronicCodeBook_encryptAESCrypt:
   case vmIntrinsics::_electronicCodeBook_decryptAESCrypt:
   case vmIntrinsics::_counterMode_AESCrypt:
+  case vmIntrinsics::_md5_implCompress:
   case vmIntrinsics::_sha_implCompress:
   case vmIntrinsics::_sha2_implCompress:
   case vmIntrinsics::_sha5_implCompress:

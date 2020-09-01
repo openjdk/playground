@@ -57,13 +57,13 @@ void G1ServiceThread::sleep_before_next_cycle() {
 
 bool G1ServiceThread::should_start_periodic_gc() {
   // If we are currently in a concurrent mark we are going to uncommit memory soon.
-  if (G1CollectedHeap::heap()->concurrent_mark()->cm_thread()->during_cycle()) {
+  if (g1h->concurrent_mark()->cm_thread()->during_cycle()) {
     log_debug(gc, periodic)("Concurrent cycle in progress. Skipping.");
     return false;
   }
 
   // Check if enough time has passed since the last GC.
-  uintx time_since_last_gc = (uintx)Universe::heap()->millis_since_last_gc();
+  uintx time_since_last_gc = (uintx)g1h->time_since_last_collection().milliseconds();
   if ((time_since_last_gc < G1PeriodicGCInterval)) {
     log_debug(gc, periodic)("Last GC occurred " UINTX_FORMAT "ms before which is below threshold " UINTX_FORMAT "ms. Skipping.",
                             time_since_last_gc, G1PeriodicGCInterval);
