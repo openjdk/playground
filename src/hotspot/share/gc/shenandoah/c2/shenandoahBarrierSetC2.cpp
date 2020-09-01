@@ -65,9 +65,7 @@ void ShenandoahBarrierSetC2State::add_enqueue_barrier(ShenandoahEnqueueBarrierNo
 }
 
 void ShenandoahBarrierSetC2State::remove_enqueue_barrier(ShenandoahEnqueueBarrierNode * n) {
-  if (_enqueue_barriers->contains(n)) {
-    _enqueue_barriers->remove(n);
-  }
+  _enqueue_barriers->remove_if_existing(n);
 }
 
 int ShenandoahBarrierSetC2State::load_reference_barriers_count() const {
@@ -986,9 +984,8 @@ void ShenandoahBarrierSetC2::verify_gc_barriers(Compile* compile, CompilePhase p
     // Verify G1 pre-barriers
     const int marking_offset = in_bytes(ShenandoahThreadLocalData::satb_mark_queue_active_offset());
 
-    ResourceArea *area = Thread::current()->resource_area();
-    Unique_Node_List visited(area);
-    Node_List worklist(area);
+    Unique_Node_List visited;
+    Node_List worklist;
     // We're going to walk control flow backwards starting from the Root
     worklist.push(compile->root());
     while (worklist.size() > 0) {
@@ -1149,16 +1146,6 @@ bool ShenandoahBarrierSetC2::final_graph_reshaping(Compile* compile, Node* n, ui
     case Op_ShenandoahWeakCompareAndSwapP:
     case Op_ShenandoahCompareAndExchangeP:
     case Op_ShenandoahCompareAndExchangeN:
-#ifdef ASSERT
-      if( VerifyOptoOopOffsets ) {
-        MemNode* mem  = n->as_Mem();
-        // Check to see if address types have grounded out somehow.
-        const TypeInstPtr *tp = mem->in(MemNode::Address)->bottom_type()->isa_instptr();
-        ciInstanceKlass *k = tp->klass()->as_instance_klass();
-        bool oop_offset_is_sane = k->contains_field_offset(tp->offset());
-        assert( !tp || oop_offset_is_sane, "" );
-      }
-#endif
       return true;
     case Op_ShenandoahLoadReferenceBarrier:
       assert(false, "should have been expanded already");
