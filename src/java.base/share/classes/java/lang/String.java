@@ -2866,7 +2866,7 @@ public final class String
      *
      * @since 12
      */
-    public String indent(int n) {
+    public String stringIndent(int n) {
         if (isEmpty()) {
             return "";
         }
@@ -2974,7 +2974,7 @@ public final class String
      *
      * @see String#lines()
      * @see String#isBlank()
-     * @see String#indent(int)
+     * @see String#stringIndent(int)
      * @see Character#isWhitespace(int)
      *
      * @since 15
