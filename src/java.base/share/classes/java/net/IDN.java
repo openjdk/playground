@@ -130,10 +130,6 @@ public final class IDN {
         return out.toString();
     }
 
-    public static String toEBCDIC(String input, int flag) {
-        return null;
-    }
-
     /**
      * Translates a string from Unicode to ASCII Compatible Encoding (ACE),
      * as defined by the ToASCII operation of <a href="http://www.ietf.org/rfc/rfc3490.txt">RFC 3490</a>.
