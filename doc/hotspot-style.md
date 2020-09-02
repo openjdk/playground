@@ -1,4 +1,5 @@
 % HotSpot Coding Style
+========================
 
 ## Introduction
 
