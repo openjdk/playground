@@ -130,6 +130,9 @@ public final class IDN {
         return out.toString();
     }
 
+    public static String toEBCDIC(String input, int flag) {
+        return null;
+    }
 
     /**
      * Translates a string from Unicode to ASCII Compatible Encoding (ACE),
