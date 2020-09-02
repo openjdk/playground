@@ -131,7 +131,7 @@ public final class IDN {
     }
 
     public static String toEBCDIC(String input, int flag) {
-	return null;
+        return null;
     }
 
     /**
