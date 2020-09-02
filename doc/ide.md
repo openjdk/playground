@@ -1,4 +1,5 @@
 % IDE support in the JDK
+=========================
 
 ## Introduction
 
