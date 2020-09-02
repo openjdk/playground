@@ -1,10 +1,20 @@
 
+<<<<<<< HEAD
 Welcome to the JDK!
+Welcome to the JDK!
+=======
+Welcome to the JDK! Now available on GitHub.com!
+>>>>>>> ed930604646558549a4abd93da746dde793158b9
 ===================
 
 Note that this is a playground repository, and may be synced and/or
 reset at any time without notice. But feel free to experiment with
 creating pull requests and integrating them!
+
+
+
+Hello there! Welcome.
+
 
 For information about building the JDK, including how to retrieve all
 of the source code, please see either of these files:

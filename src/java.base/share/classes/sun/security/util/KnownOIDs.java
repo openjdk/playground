@@ -116,20 +116,28 @@ public enum KnownOIDs {
     AES_128$CBC$NoPadding("2.16.840.1.101.3.4.1.2", "AES_128/CBC/NoPadding"),
     AES_128$OFB$NoPadding("2.16.840.1.101.3.4.1.3", "AES_128/OFB/NoPadding"),
     AES_128$CFB$NoPadding("2.16.840.1.101.3.4.1.4", "AES_128/CFB/NoPadding"),
-    AESWRAP_128("2.16.840.1.101.3.4.1.5"),
+    AESWRAP_128("2.16.840.1.101.3.4.1.5", "AESWrap_128",
+            "AES_128/KW/NoPadding"),
     AES_128$GCM$NoPadding("2.16.840.1.101.3.4.1.6", "AES_128/GCM/NoPadding"),
+    AES_128$KWP$NoPadding("2.16.840.1.101.3.4.1.8", "AES_128/KWP/NoPadding"),
+
     AES_192$ECB$NoPadding("2.16.840.1.101.3.4.1.21", "AES_192/ECB/NoPadding"),
     AES_192$CBC$NoPadding("2.16.840.1.101.3.4.1.22", "AES_192/CBC/NoPadding"),
     AES_192$OFB$NoPadding("2.16.840.1.101.3.4.1.23", "AES_192/OFB/NoPadding"),
     AES_192$CFB$NoPadding("2.16.840.1.101.3.4.1.24", "AES_192/CFB/NoPadding"),
-    AESWRAP_192("2.16.840.1.101.3.4.1.25"),
+    AESWRAP_192("2.16.840.1.101.3.4.1.25", "AESWrap_192",
+            "AES_192/KW/NoPadding"),
     AES_192$GCM$NoPadding("2.16.840.1.101.3.4.1.26", "AES_192/GCM/NoPadding"),
+    AES_192$KWP$NoPadding("2.16.840.1.101.3.4.1.28", "AES_192/KWP/NoPadding"),
+
     AES_256$ECB$NoPadding("2.16.840.1.101.3.4.1.41", "AES_256/ECB/NoPadding"),
     AES_256$CBC$NoPadding("2.16.840.1.101.3.4.1.42", "AES_256/CBC/NoPadding"),
     AES_256$OFB$NoPadding("2.16.840.1.101.3.4.1.43", "AES_256/OFB/NoPadding"),
     AES_256$CFB$NoPadding("2.16.840.1.101.3.4.1.44", "AES_256/CFB/NoPadding"),
-    AESWRAP_256("2.16.840.1.101.3.4.1.45"),
+    AESWRAP_256("2.16.840.1.101.3.4.1.45", "AESWrap_256",
+            "AES_256/KW/NoPadding"),
     AES_256$GCM$NoPadding("2.16.840.1.101.3.4.1.46", "AES_256/GCM/NoPadding"),
+    AES_256$KWP$NoPadding("2.16.840.1.101.3.4.1.48", "AES_256/KWP/NoPadding"),
 
     // hashAlgs 2.16.840.1.101.3.4.2.*
     SHA_256("2.16.840.1.101.3.4.2.1", "SHA-256", "SHA256"),
@@ -429,9 +437,9 @@ public enum KnownOIDs {
         if (debug != null) {
             debug.println("Setting up name2enum:");
         }
-        List.of(KnownOIDs.values()).forEach(o -> {
+        for (KnownOIDs o : KnownOIDs.values()) {
             register(o);
-        });
+        };
     }
 
     private static void register(KnownOIDs o) {
