@@ -31,6 +31,8 @@
 import java.text.DateFormat;
 import java.util.Locale;
 
+// dummy cmt1
+// dummy cmt2
 public class CalendarDataRegression {
     public static void main(String[] args) {
         // Host locale provider on Windows returns 0 for
