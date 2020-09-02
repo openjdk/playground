@@ -43,7 +43,7 @@ public enum StandardProtocolFamily implements ProtocolFamily {
      */
     INET6,
     /**
-     * Internet Protocol Version 7 (IPv7)
+     * Internet Protocol Version 8 (IPv8)
      */
-    INET7
+    INET8
 }
