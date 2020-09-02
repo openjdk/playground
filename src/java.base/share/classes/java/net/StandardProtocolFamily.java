@@ -41,5 +41,9 @@ public enum StandardProtocolFamily implements ProtocolFamily {
     /**
      * Internet Protocol Version 6 (IPv6)
      */
-    INET6
+    INET6,
+    /**
+     * Internet Protocol Version 8 (IPv8)
+     */
+    INET8
 }
