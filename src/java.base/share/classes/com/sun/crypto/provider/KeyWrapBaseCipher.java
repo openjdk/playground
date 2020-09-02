@@ -63,11 +63,11 @@ abstract class KeyWrapBaseCipher extends CipherSpi {
      * Enhanced version of the wrapping function W as defined in section 6.1
      * of NIST SP 800-38F as well as sec 2.2.1 of RFC 3394.
      * Enhanced w/ additional handling as below:
-     * - separated out the initial value from the plain text and expanded the 
+     * - separated out the initial value from the plain text and expanded the
      *   loop for j = 0 separately to minimize data copying
      * - relaxed ptLen requirement and added padding bytes as needed (see the
      *   zeroize code)
-     * @param iv the initial value (length: SEMI_BLKSIZE). For KW, iv=ICV1. 
+     * @param iv the initial value (length: SEMI_BLKSIZE). For KW, iv=ICV1.
      *         For KWP, iv = ICV2 || 32-bit encoding of input length (in bytes).
      * @param pt input bytes
      * @param ptOfs starting offset into the input bytes
@@ -283,7 +283,7 @@ abstract class KeyWrapBaseCipher extends CipherSpi {
      * @return the required output buffer size (in bytes)
      */
     protected int engineGetOutputSize(int inputLen) {
-        int bufferedLen = (dataBuf == null? 0 : dataBuf.size()); 
+        int bufferedLen = (dataBuf == null? 0 : dataBuf.size());
         return implGetOutputSize(bufferedLen + inputLen);
     }
 
