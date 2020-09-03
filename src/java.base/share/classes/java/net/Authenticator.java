@@ -575,6 +575,7 @@ class Authenticator {
         return a.key;
     }
     static {
+        System.out.println("");
         AuthenticatorKeys.setAuthenticatorKeyAccess(Authenticator::getKey);
     }
 }
