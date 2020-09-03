@@ -1,0 +1,2 @@
+Another line added by BranchToMerge2
+Just text
