@@ -4,6 +4,7 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
+ * under the terms of the GNU General Public License version 2 only, as
  * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
  * by Oracle in the LICENSE file that accompanied this code.
@@ -19,6 +20,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
@@ -152,6 +154,7 @@ public class Socket implements java.io.Closeable {
 
     /**
      * Creates an unconnected socket, specifying the type of proxy, if any,
+     * Creates an unconnected socket, specifying the type of proxy, if any,
      * that should be used regardless of any other settings.
      * <P>
      * If there is a security manager, its {@code checkConnect} method
@@ -252,6 +255,8 @@ public class Socket implements java.io.Closeable {
     }
 
     /**
+     * Creates a stream socket and connects it to the specified port
+     * number on the named host.
      * Creates a stream socket and connects it to the specified port
      * number on the named host.
      * <p>
