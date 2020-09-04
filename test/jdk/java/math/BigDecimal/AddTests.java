@@ -60,6 +60,7 @@ public class AddTests {
             if (!bd1[i].add(bd2).equals(expectedResult[i]))
                 failures++;
         }
+        System.out.println("Hola mundo");
         return failures;
     }
 
