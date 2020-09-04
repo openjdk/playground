@@ -34,7 +34,10 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 /**
  * The MD5 class is used to compute an MD5 message digest over a given
  * buffer of bytes. It is an implementation of the RSA Data Security Inc
- * MD5 algorithim as described in internet RFC 1321.
+ * MD5 algorithm as described in internet RFC 1321.
+ *
+ * No longer secure for security usage.  Using for integrity checks where a
+ * collision is not possible is reasonable usage.
  *
  * @author      Chuck McManis
  * @author      Benjamin Renaud
