@@ -1,0 +1,5 @@
+The white zone is for immediate loading and unloading of passengers only.
+There is no stopping in a red zone.
+
+The red zone is for immediate loading and unloading of passengers only.
+There is no stopping in a white zone.
