@@ -171,7 +171,7 @@ public interface ResultSet extends Wrapper, AutoCloseable {
      *
      * @return <code>true</code> if the new current row is valid;
      * <code>false</code> if there are no more rows
-     * @exception SQLException if a database access error occurs or this method is
+     * @throws SQLException if a database access error occurs or this method is
      *            called on a closed result set
      */
     boolean next() throws SQLException;
