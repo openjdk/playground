@@ -353,7 +353,7 @@ import java.util.function.BiFunction;
  *      may execute concurrently of each other.
  *
  *      <li> The SSL/TLS/DTLS protocols employ ordered packets.
- *      Applications must take care to ensure that generated packets
+ *      Applications must ake care to ensure that generated packets
  *      are delivered in sequence.  If packets arrive
  *      out-of-order, unexpected or fatal results may occur.
  * <P>
@@ -371,11 +371,11 @@ import java.util.function.BiFunction;
  *      because there is no way to guarantee the eventual packet ordering.
  * </OL>
  *
- * @see SSLContext
  * @see SSLSocket
  * @see SSLServerSocket
  * @see SSLSession
  * @see java.net.Socket
+ * @see SSLContext
  *
  * @since 1.5
  * @author Brad R. Wetmore
