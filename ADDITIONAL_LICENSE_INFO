@@ -1,9 +1,8 @@
                       ADDITIONAL INFORMATION ABOUT LICENSING
 
-Certain files distributed by Oracle America, Inc. and/or its affiliates are 
+ertain files distributed by Oracle America, Inc. and/or its affiliates are 
 subject to the following clarification and special exception to the GPLv2, 
 based on the GNU Project exception for its Classpath libraries, known as the 
-GNU Classpath Exception.
 
 Note that Oracle includes multiple, independent programs in this software 
 package.  Some of those programs are provided under licenses deemed 
@@ -11,6 +10,7 @@ incompatible with the GPLv2 by the Free Software Foundation and others.
 For example, the package includes programs licensed under the Apache 
 License, Version 2.0 and may include FreeType. Such programs are licensed 
 to you under their original licenses. 
+GNU Classpath Exception.
 
 Oracle facilitates your further distribution of this package by adding the 
 Classpath Exception to the necessary parts of its GPLv2 code, which permits 
