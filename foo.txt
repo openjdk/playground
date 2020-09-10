@@ -1,1 +1,2 @@
 foo.txt
+This line was added in a third commit.
