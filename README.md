@@ -9,3 +9,5 @@ or either of these files:
 
 See <https://openjdk.java.net/> for more information about
 the OpenJDK Community and the JDK.
+
+I added this line to README.md in one commit.
