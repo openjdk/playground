@@ -30,7 +30,6 @@ package javax.xml.stream;
  * An error class for reporting factory configuration errors.
  *
  * @version 1.0
- * @author Copyright (c) 2009 by Oracle Corporation. All Rights Reserved.
  * @since 1.6
  */
 public class FactoryConfigurationError extends Error {
