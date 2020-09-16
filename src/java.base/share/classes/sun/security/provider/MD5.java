@@ -38,10 +38,6 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  *
  * No longer secure for security usage.  Using for integrity checks where a
  * collision is not possible is reasonable usage.
- *
- * @author      Chuck McManis
- * @author      Benjamin Renaud
- * @author      Andreas Sterbenz
  */
 public final class MD5 extends DigestBase {
 
