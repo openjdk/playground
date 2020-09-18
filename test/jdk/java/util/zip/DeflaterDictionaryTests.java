@@ -46,6 +46,7 @@ public class DeflaterDictionaryTests {
             +"Welcome to US Open;"
             +"Welcome to US Open;"
             +"Welcome to US Open;"
+            +"Welcome to US Open;"
             +"Welcome to US Open;";
     private static final String DICTIONARY = "US Open";
 
