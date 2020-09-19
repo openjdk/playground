@@ -192,7 +192,7 @@ public class CompoundName implements Name {
       * @param syntax   A non-null list of properties that specify the syntax of
       *                 this compound name.  See class description for
       *                 contents of properties.
-      * @exception      InvalidNameException If 'n' violates the syntax specified
+      * @throws         InvalidNameException If 'n' violates the syntax specified
       *                 by {@code syntax}.
       */
     public CompoundName(String n, Properties syntax) throws InvalidNameException {
