@@ -1,5 +1,4 @@
 % Testing the JDK
-====================
 
 ## Using "make test" (the run-test framework)
 

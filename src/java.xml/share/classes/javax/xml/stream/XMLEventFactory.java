@@ -129,7 +129,7 @@ public abstract class XMLEventFactory {
    * </li>
    * </ul>
    * <p>
-   *   Once an application has obtained a reference to a XMLEventFactory, it
+   *   Once an application has obtained a reference to a XMLEventFactory it
    *   can use the factory to configure and obtain stream instances.
    *
    * @return an instance of the {@code XMLEventFactory}

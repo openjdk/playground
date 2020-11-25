@@ -60,7 +60,7 @@ class MethodHandles: AllStatic {
 
  public:
   // working with member names
-  static Handle resolve_MemberName(Handle mname, Klass* caller,
+  static Handle resolve_MemberName(Handle mname, Klass* caller, int lookup_mode,
                                    bool speculative_resolve, TRAPS); // compute vmtarget/vmindex from name/type
   static void expand_MemberName(Handle mname, int suppress, TRAPS);  // expand defc/name/type if missing
   static oop init_MemberName(Handle mname_h, Handle target_h, TRAPS); // compute vmtarget/vmindex from target
@@ -118,7 +118,7 @@ class MethodHandles: AllStatic {
   static bool has_member_arg(vmIntrinsics::ID iid) {
     assert(is_signature_polymorphic(iid), "");
     return (iid >= vmIntrinsics::_linkToVirtual &&
-            iid <= vmIntrinsics::_linkToInterface);
+            iid <= vmIntrinsics::_linkToNative);
   }
   static bool has_member_arg(Symbol* klass, Symbol* name) {
     if ((klass == vmSymbols::java_lang_invoke_MethodHandle() ||

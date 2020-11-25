@@ -4,7 +4,6 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * under the terms of the GNU General Public License version 2 only, as
  * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
  * by Oracle in the LICENSE file that accompanied this code.
@@ -20,7 +19,6 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
@@ -98,7 +96,6 @@ import java.util.Collections;
  * </blockquote>
  * Additional (implementation specific) options may also be supported.
  *
- * @author  unascribed
  * @see     java.net.Socket#setSocketImplFactory(java.net.SocketImplFactory)
  * @see     java.net.SocketImpl
  * @see     java.nio.channels.SocketChannel
@@ -153,7 +150,6 @@ public class Socket implements java.io.Closeable {
     }
 
     /**
-     * Creates an unconnected socket, specifying the type of proxy, if any,
      * Creates an unconnected socket, specifying the type of proxy, if any,
      * that should be used regardless of any other settings.
      * <P>
@@ -255,8 +251,6 @@ public class Socket implements java.io.Closeable {
     }
 
     /**
-     * Creates a stream socket and connects it to the specified port
-     * number on the named host.
      * Creates a stream socket and connects it to the specified port
      * number on the named host.
      * <p>
@@ -596,7 +590,6 @@ public class Socket implements java.io.Closeable {
      * @throws  IllegalArgumentException if endpoint is null or is a
      *          SocketAddress subclass not supported by this socket
      * @since 1.4
-     * @spec JSR-51
      */
     public void connect(SocketAddress endpoint) throws IOException {
         connect(endpoint, 0);
@@ -618,7 +611,6 @@ public class Socket implements java.io.Closeable {
      *          SocketAddress subclass not supported by this socket, or
      *          if {@code timeout} is negative
      * @since 1.4
-     * @spec JSR-51
      */
     public void connect(SocketAddress endpoint, int timeout) throws IOException {
         if (endpoint == null)
@@ -891,7 +883,6 @@ public class Socket implements java.io.Closeable {
      *          for a channel
      *
      * @since 1.4
-     * @spec JSR-51
      */
     public SocketChannel getChannel() {
         return null;
@@ -940,7 +931,6 @@ public class Socket implements java.io.Closeable {
      *             using {@link #shutdownInput()}
      *
      * @revised 1.4
-     * @spec JSR-51
      */
     public InputStream getInputStream() throws IOException {
         if (isClosed())
@@ -1012,7 +1002,6 @@ public class Socket implements java.io.Closeable {
      * @throws     IOException  if an I/O error occurs when creating the
      *               output stream or if the socket is not connected.
      * @revised 1.4
-     * @spec JSR-51
      */
     public OutputStream getOutputStream() throws IOException {
         if (isClosed())
@@ -1586,7 +1575,6 @@ public class Socket implements java.io.Closeable {
      *
      * @throws     IOException  if an I/O error occurs when closing this socket.
      * @revised 1.4
-     * @spec JSR-51
      * @see #isClosed
      */
     public synchronized void close() throws IOException {

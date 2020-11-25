@@ -93,8 +93,7 @@ void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, boo
   assert(is_initialized(), "Compiler thread must be initialized");
 
   bool subsume_loads = SubsumeLoads;
-  bool do_escape_analysis = DoEscapeAnalysis && !env->should_retain_local_variables()
-                                             && !env->jvmti_can_get_owned_monitor_info();
+  bool do_escape_analysis = DoEscapeAnalysis;
   bool eliminate_boxing = EliminateAutoBox;
 
   while (!env->failing()) {
@@ -458,6 +457,18 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_floor:
     if (!Matcher::match_rule_supported(Op_RoundDoubleMode)) return false;
     break;
+  case vmIntrinsics::_dcopySign:
+    if (!Matcher::match_rule_supported(Op_CopySignD)) return false;
+    break;
+  case vmIntrinsics::_fcopySign:
+    if (!Matcher::match_rule_supported(Op_CopySignF)) return false;
+    break;
+  case vmIntrinsics::_dsignum:
+    if (!Matcher::match_rule_supported(Op_SignumD)) return false;
+    break;
+  case vmIntrinsics::_fsignum:
+    if (!Matcher::match_rule_supported(Op_SignumF)) return false;
+    break;
   case vmIntrinsics::_hashCode:
   case vmIntrinsics::_identityHashCode:
   case vmIntrinsics::_getClass:
@@ -484,6 +495,7 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_indexOfIU:
   case vmIntrinsics::_indexOfIUL:
   case vmIntrinsics::_indexOfU_char:
+  case vmIntrinsics::_indexOfL_char:
   case vmIntrinsics::_toBytesStringU:
   case vmIntrinsics::_getCharsStringU:
   case vmIntrinsics::_getCharStringU:
@@ -614,6 +626,7 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_sha_implCompress:
   case vmIntrinsics::_sha2_implCompress:
   case vmIntrinsics::_sha5_implCompress:
+  case vmIntrinsics::_sha3_implCompress:
   case vmIntrinsics::_digestBase_implCompressMB:
   case vmIntrinsics::_multiplyToLen:
   case vmIntrinsics::_squareToLen:
@@ -625,6 +638,7 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_vectorizedMismatch:
   case vmIntrinsics::_ghash_processBlocks:
   case vmIntrinsics::_base64_encodeBlock:
+  case vmIntrinsics::_base64_decodeBlock:
   case vmIntrinsics::_updateCRC32:
   case vmIntrinsics::_updateBytesCRC32:
   case vmIntrinsics::_updateByteBufferCRC32:
@@ -635,7 +649,31 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_profileBoolean:
   case vmIntrinsics::_isCompileConstant:
   case vmIntrinsics::_Preconditions_checkIndex:
+  case vmIntrinsics::_Preconditions_checkLongIndex:
+  case vmIntrinsics::_getObjectSize:
     break;
+
+  case vmIntrinsics::_VectorUnaryOp:
+  case vmIntrinsics::_VectorBinaryOp:
+  case vmIntrinsics::_VectorTernaryOp:
+  case vmIntrinsics::_VectorBroadcastCoerced:
+  case vmIntrinsics::_VectorShuffleIota:
+  case vmIntrinsics::_VectorShuffleToVector:
+  case vmIntrinsics::_VectorLoadOp:
+  case vmIntrinsics::_VectorStoreOp:
+  case vmIntrinsics::_VectorGatherOp:
+  case vmIntrinsics::_VectorScatterOp:
+  case vmIntrinsics::_VectorReductionCoerced:
+  case vmIntrinsics::_VectorTest:
+  case vmIntrinsics::_VectorBlend:
+  case vmIntrinsics::_VectorRearrange:
+  case vmIntrinsics::_VectorCompare:
+  case vmIntrinsics::_VectorBroadcastInt:
+  case vmIntrinsics::_VectorConvert:
+  case vmIntrinsics::_VectorInsert:
+  case vmIntrinsics::_VectorExtract:
+    return EnableVectorSupport;
+
   default:
     return false;
   }

@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @bug 8040211 8191404 8203872 8222980 8225435 8241082 8242010
+ * @bug 8040211 8191404 8203872 8222980 8225435 8241082 8242010 8247432
  * @summary Checks the IANA language subtag registry data update
  *          (LSR Revision: 2020-04-01) with Locale and Locale.LanguageRange
  *          class methods.
