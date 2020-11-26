@@ -21,32 +21,28 @@
  * questions.
  */
 
-#ifndef SHARE_VM_PRIMS_UNIVERSALUPCALLHANDLER_HPP
-#define SHARE_VM_PRIMS_UNIVERSALUPCALLHANDLER_HPP
+import java.awt.EventQueue;
+import java.awt.Robot;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-#include "asm/codeBuffer.hpp"
-#include "prims/foreign_globals.hpp"
+/**
+ * @test
+ * @key headful
+ * @bug 8196100
+ * @summary Checks that current event is flushed by the Robot.waitForIdle()
+ */
+public final class FlushCurrentEvent {
 
-class JavaThread;
-
-class ProgrammableUpcallHandler {
-private:
-  static constexpr CodeBuffer::csize_t upcall_stub_size = 1024;
-
-  struct UpcallMethod {
-    Klass* klass;
-    Symbol* name;
-    Symbol* sig;
-  } upcall_method;
-
-  ProgrammableUpcallHandler();
-
-  static const ProgrammableUpcallHandler& instance();
-
-  static void upcall_helper(JavaThread* thread, jobject rec, address buff);
-  static void attach_thread_and_do_upcall(jobject rec, address buff);
-public:
-  static address generate_upcall_stub(jobject rec, jobject abi, jobject buffer_layout);
-};
-
-#endif // SHARE_VM_PRIMS_UNIVERSALUPCALLHANDLER_HPP
+    public static void main(String[] args) throws Exception {
+        Robot robot = new Robot();
+        AtomicBoolean done = new AtomicBoolean();
+        EventQueue.invokeLater(() -> {
+            robot.delay(15000);
+            done.set(true);
+        });
+        robot.waitForIdle();
+        if (!done.get()) {
+            throw new RuntimeException("Current event was not flushed");
+        }
+    }
+}

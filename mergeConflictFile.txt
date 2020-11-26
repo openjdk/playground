@@ -1,4 +1,0 @@
-This is a change from 'BranchToMerge1'!
-Another line added by BranchToMerge2
-Completely ortogonal change from BranchToMerge3
-Just text
