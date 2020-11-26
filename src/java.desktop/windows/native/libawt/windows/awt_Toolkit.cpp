@@ -1067,12 +1067,8 @@ LRESULT CALLBACK AwtToolkit::WndProc(HWND hWnd, UINT message,
               AwtClipboard::LostOwnership((JNIEnv *)JNU_GetEnv(jvm, JNI_VERSION_1_2));
           return 0;
       }
-      case WM_CHANGECBCHAIN: {
-          AwtClipboard::WmChangeCbChain(wParam, lParam);
-          return 0;
-      }
-      case WM_DRAWCLIPBOARD: {
-          AwtClipboard::WmDrawClipboard((JNIEnv *)JNU_GetEnv(jvm, JNI_VERSION_1_2), wParam, lParam);
+      case WM_CLIPBOARDUPDATE: {
+          AwtClipboard::WmClipboardUpdate((JNIEnv *)JNU_GetEnv(jvm, JNI_VERSION_1_2));
           return 0;
       }
       case WM_AWT_LIST_SETMULTISELECT: {
@@ -3211,10 +3207,20 @@ BOOL AwtToolkit::TICloseTouchInputHandle(HTOUCHINPUT hTouchInput) {
  * instead of SendMessage().
  */
 LRESULT AwtToolkit::InvokeInputMethodFunction(UINT msg, WPARAM wParam, LPARAM lParam) {
-    CriticalSection::Lock lock(m_inputMethodLock);
-    if (PostMessage(msg, wParam, lParam)) {
-        ::WaitForSingleObject(m_inputMethodWaitEvent, INFINITE);
-        return m_inputMethodData;
+    /*
+     * DND runs on the main thread. So it is  necessary to use SendMessage() to call an IME
+     * function once the DND is active; otherwise a hang is possible since DND may wait for
+     * the IME completion.
+     */
+    if (isInDoDragDropLoop) {
+        return SendMessage(msg, wParam, lParam);
+    } else {
+        CriticalSection::Lock lock(m_inputMethodLock);
+        if (PostMessage(msg, wParam, lParam)) {
+            ::WaitForSingleObject(m_inputMethodWaitEvent, INFINITE);
+            return m_inputMethodData;
+        }
+        return 0;
     }
-    return 0;
 }
+

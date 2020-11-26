@@ -327,7 +327,7 @@ void G1RemSetSummary::print_on(outputStream* out) {
     out->print("    %5.2f", rs_thread_vtime(i));
   }
   out->cr();
-  out->print_cr("  Concurrent sampling threads times (s)");
+  out->print_cr("  Service thread time (s)");
   out->print_cr("         %5.2f", service_thread_vtime());
 
   HRRSStatsIter blk;

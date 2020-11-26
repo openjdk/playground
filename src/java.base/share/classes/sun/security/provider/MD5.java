@@ -29,15 +29,12 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static sun.security.provider.ByteArrayAccess.*;
-import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.vm.annotation.IntrinsicCandidate;
 
 /**
  * The MD5 class is used to compute an MD5 message digest over a given
  * buffer of bytes. It is an implementation of the RSA Data Security Inc
- * MD5 algorithm as described in internet RFC 1321.
- *
- * No longer secure for security usage.  Using for integrity checks where a
- * collision is not possible is reasonable usage.
+ * MD5 algorithim as described in internet RFC 1321.
  *
  * @author      Chuck McManis
  * @author      Benjamin Renaud
@@ -171,7 +168,7 @@ public final class MD5 extends DigestBase {
     // that operates directly on the array 'buf' (starting from
     // offset 'ofs') and not on array 'x', therefore 'buf' and 'ofs'
     // must be passed as parameter to the method.
-    @HotSpotIntrinsicCandidate
+    @IntrinsicCandidate
     void implCompress0(byte[] buf, int ofs) {
         int a = state[0];
         int b = state[1];

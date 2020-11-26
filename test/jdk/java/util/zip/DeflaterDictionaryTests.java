@@ -20,18 +20,18 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.testng.Assert.assertThrows;
 
 /**
  * @test
@@ -40,160 +40,213 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @run testng/othervm DeflaterDictionaryTests
  */
 public class DeflaterDictionaryTests {
+    // Output buffer size
     private static final int RESULT_SIZE = 1024;
-    private static final String message = "Welcome to US Open;"
-            +"Welcome to US Open;"
-            +"Welcome to US Open;"
-            +"Welcome to US Open;"
-            +"Welcome to US Open;"
-            +"Welcome to US Open;"
-            +"Welcome to US Open;";
+    // Data to compress
+    private static final String SRC_DATA = "Welcome to the US Open;".repeat(6);
+    // Dictionary to be used
     private static final String DICTIONARY = "US Open";
+    private static final int DICTIONARY_OFFSET = 1;
+    private static final int DICTIONARY_LENGTH = 3;
+
+    /**
+     * DataProvider with offsets which should be valid for setDictionary
+     *
+     * @return valid offset values
+     */
+    @DataProvider(name = "validDictionaryOffsets")
+    protected Object[][] validDictionaryOffsets() {
+        return new Object[][]{
+                {0},
+                {DICTIONARY_OFFSET},
+                {DICTIONARY_LENGTH}
+        };
+    }
+
+    /**
+     * DataProvider with  invalid offsets for setDictionary
+     *
+     * @return invalid offset values
+     */
+    @DataProvider(name = "invalidDictionaryOffsets")
+    protected Object[][] invalidDictionaryOffsets() {
+        return new Object[][]{
+                {-1},
+                {DICTIONARY_LENGTH + 2},
+                {DICTIONARY.length()}
+        };
+    }
 
     /**
      * Validate that an offset can be used with Deflater::setDictionary
+     *
+     * @param dictionary_offset offset value to be used
      * @throws Exception if an error occurs
      */
-    @Test
-    public void ByteArrayTest() throws Exception {
-        System.out.println("Original Message length : " + message.length());
-        byte[] input = message.getBytes(UTF_8);
-        // Compress the bytes
+    @Test(dataProvider = "validDictionaryOffsets")
+    public void testByteArray(int dictionary_offset) throws Exception {
+        byte[] input = SRC_DATA.getBytes(UTF_8);
         byte[] output = new byte[RESULT_SIZE];
         Deflater deflater = new Deflater();
-        deflater.setDictionary(DICTIONARY.getBytes(UTF_8), 1, 3);
-        deflater.setInput(input);
-        deflater.finish();
-        int compressedDataLength = deflater.deflate(output,0 , output.length, Deflater.NO_FLUSH);
-        System.out.println("Total uncompressed bytes output :" + deflater.getTotalOut());
-        System.out.println("Compressed Message Checksum :" + deflater.getAdler());
-        deflater.finished();
-        System.out.println("Compressed Message length : " + compressedDataLength);
-
-        // Decompress the bytes
         Inflater inflater = new Inflater();
-        inflater.setInput(output, 0, compressedDataLength);
-        byte[] result = new byte[RESULT_SIZE];
-        int resultLength = inflater.inflate(result);
-        if(inflater.needsDictionary()) {
-            System.out.println("Specifying Dictionary");
-            inflater.setDictionary(DICTIONARY.getBytes(UTF_8), 1, 3);
-            resultLength = inflater.inflate(result);
-        } else {
-            System.out.println("Did not need to use a Dictionary");
+        try {
+            // Compress the bytes
+            deflater.setDictionary(DICTIONARY.getBytes(UTF_8), dictionary_offset, DICTIONARY_LENGTH);
+            deflater.setInput(input);
+            deflater.finish();
+            int compressedDataLength = deflater.deflate(output, 0, output.length, Deflater.NO_FLUSH);
+            System.out.printf("Deflater::getTotalOut:%s, Deflater::getAdler: %s," +
+                            " compressed length: %s%n", deflater.getTotalOut(),
+                    deflater.getTotalOut(), compressedDataLength);
+            deflater.finished();
+
+            // Decompress the bytes
+            inflater.setInput(output, 0, compressedDataLength);
+            byte[] result = new byte[RESULT_SIZE];
+            int resultLength = inflater.inflate(result);
+            if (inflater.needsDictionary()) {
+                System.out.println("Specifying Dictionary");
+                inflater.setDictionary(DICTIONARY.getBytes(UTF_8), dictionary_offset, DICTIONARY_LENGTH);
+                resultLength = inflater.inflate(result);
+            } else {
+                System.out.println("Did not need to use a Dictionary");
+            }
+            inflater.finished();
+            System.out.printf("Inflater::getAdler:%s, length: %s%n",
+                    inflater.getAdler(), resultLength);
+
+            Assert.assertEquals(SRC_DATA.length(), resultLength);
+            Assert.assertEquals(input, Arrays.copyOf(result, resultLength));
+        } finally {
+            // Release Resources
+            deflater.end();
+            inflater.end();
         }
-        inflater.finished();
-
-        // Decode the bytes into a String
-        String resultMessage = new String(result, 0, resultLength, UTF_8);
-        System.out.println("UnCompressed Message Checksum :" + inflater.getAdler());
-        System.out.println("UnCompressed Message length : " + resultMessage.length());
-
-        Assert.assertEquals(message.length(), resultLength);
-        Assert.assertEquals(input, Arrays.copyOf(result, resultLength));
-
-        // Release Resources
-        deflater.end();
-        inflater.end();
     }
 
     /**
      * Validate that a ByteBuffer can be used with Deflater::setDictionary
+     *
      * @throws Exception if an error occurs
      */
     @Test
-    public void testByteBufferWrap() throws DataFormatException {
-
-        System.out.println("Original Message length : " + message.length());
-        byte[] input = message.getBytes(UTF_8);
-
-        // Compress the bytes
+    public void testHeapByteBuffer() throws Exception {
+        byte[] input = SRC_DATA.getBytes(UTF_8);
         byte[] output = new byte[RESULT_SIZE];
-        ByteBuffer dictDef = ByteBuffer.wrap(DICTIONARY.getBytes(UTF_8));
-        ByteBuffer dictInf = ByteBuffer.wrap(DICTIONARY.getBytes(UTF_8));
+        ByteBuffer dictDef = ByteBuffer.wrap(DICTIONARY.getBytes(UTF_8), DICTIONARY_OFFSET, DICTIONARY_LENGTH);
+        ByteBuffer dictInf = ByteBuffer.wrap(DICTIONARY.getBytes(UTF_8), DICTIONARY_OFFSET, DICTIONARY_LENGTH);
         Deflater deflater = new Deflater();
-        deflater.setDictionary(dictDef);
-        deflater.setInput(input);
-        deflater.finish();
-        int compressedDataLength = deflater.deflate(output,0 , output.length, Deflater.NO_FLUSH);
-        System.out.println("Total uncompressed bytes output :" + deflater.getTotalOut());
-        System.out.println("Compressed Message Checksum :" + deflater.getAdler());
-        deflater.finished();
-        System.out.println("Compressed Message length : " + compressedDataLength);
-
-        // Decompress the bytes
         Inflater inflater = new Inflater();
-        inflater.setInput(output, 0, compressedDataLength);
-        byte[] result = new byte[RESULT_SIZE];
-        int resultLength = inflater.inflate(result);
-        if(inflater.needsDictionary()) {
-            System.out.println("Specifying Dictionary");
-            inflater.setDictionary(dictInf);
-            resultLength = inflater.inflate(result);
-        } else {
-            System.out.println("Did not need to use a Dictionary");
+        try {
+            // Compress the bytes
+            deflater.setDictionary(dictDef);
+            deflater.setInput(input);
+            deflater.finish();
+            int compressedDataLength = deflater.deflate(output, 0, output.length, Deflater.NO_FLUSH);
+            System.out.printf("Deflater::getTotalOut:%s, Deflater::getAdler: %s," +
+                            " compressed length: %s%n", deflater.getTotalOut(),
+                    deflater.getTotalOut(), compressedDataLength);
+            deflater.finished();
+
+            // Decompress the bytes
+            inflater.setInput(output, 0, compressedDataLength);
+            byte[] result = new byte[RESULT_SIZE];
+            int resultLength = inflater.inflate(result);
+            if (inflater.needsDictionary()) {
+                System.out.println("Specifying Dictionary");
+                inflater.setDictionary(dictInf);
+                resultLength = inflater.inflate(result);
+            } else {
+                System.out.println("Did not need to use a Dictionary");
+            }
+            inflater.finished();
+            System.out.printf("Inflater::getAdler:%s, length: %s%n",
+                    inflater.getAdler(), resultLength);
+
+            Assert.assertEquals(SRC_DATA.length(), resultLength);
+            Assert.assertEquals(input, Arrays.copyOf(result, resultLength));
+        } finally {
+            // Release Resources
+            deflater.end();
+            inflater.end();
         }
-        inflater.finished();
-
-        // Decode the bytes into a String
-        String resultMessage = new String(result, 0, resultLength, UTF_8);
-        System.out.println("UnCompressed Message Checksum :" + inflater.getAdler());
-        System.out.println("UnCompressed Message length : " + resultMessage.length());
-
-        Assert.assertEquals(message.length(), resultLength);
-        Assert.assertEquals(input, Arrays.copyOf(result, resultLength));
-
-        // Release Resources
-        deflater.end();
-        inflater.end();
     }
 
     /**
      * Validate that ByteBuffer::allocateDirect can be used with Deflater::setDictionary
+     *
      * @throws Exception if an error occurs
      */
     @Test
     public void testByteBufferDirect() throws Exception {
-        System.out.println("Original Message length : " + message.length());
-        byte[] input = message.getBytes(UTF_8);
-        // Compress the bytes
+        byte[] input = SRC_DATA.getBytes(UTF_8);
         byte[] output = new byte[RESULT_SIZE];
         ByteBuffer dictDef = ByteBuffer.allocateDirect(DICTIONARY.length());
         ByteBuffer dictInf = ByteBuffer.allocateDirect(DICTIONARY.length());
+        dictDef.put(DICTIONARY.getBytes(UTF_8));
+        dictInf.put(DICTIONARY.getBytes(UTF_8));
+        dictDef.position(DICTIONARY_OFFSET);
+        dictDef.limit(DICTIONARY_LENGTH);
+        dictInf.position(DICTIONARY_OFFSET);
+        dictInf.limit(DICTIONARY_LENGTH);
         Deflater deflater = new Deflater();
-        deflater.setDictionary(dictDef);
-        deflater.setInput(input);
-        deflater.finish();
-        int compressedDataLength = deflater.deflate(output,0 , output.length, Deflater.NO_FLUSH);
-        System.out.println("Total uncompressed bytes output :" + deflater.getTotalOut());
-        System.out.println("Compressed Message Checksum :" + deflater.getAdler());
-        deflater.finished();
-        System.out.println("Compressed Message length : " + compressedDataLength);
-
-        // Decompress the bytes
         Inflater inflater = new Inflater();
-        inflater.setInput(output, 0, compressedDataLength);
-        byte[] result = new byte[RESULT_SIZE];
-        int resultLength = inflater.inflate(result);
-        if(inflater.needsDictionary()){
-            System.out.println("Specifying Dictionary");
-            inflater.setDictionary(dictInf);
-            resultLength = inflater.inflate(result);
-        } else {
-            System.out.println("Did not need to use a Dictionary");
+        try {
+            // Compress the bytes
+            deflater.setDictionary(dictDef.slice());
+            deflater.setInput(input);
+            deflater.finish();
+            int compressedDataLength = deflater.deflate(output, 0, output.length, Deflater.NO_FLUSH);
+            System.out.printf("Deflater::getTotalOut:%s, Deflater::getAdler: %s," +
+                            " compressed length: %s%n", deflater.getTotalOut(),
+                    deflater.getTotalOut(), compressedDataLength);
+            deflater.finished();
+
+            // Decompress the bytes
+            inflater.setInput(output, 0, compressedDataLength);
+            byte[] result = new byte[RESULT_SIZE];
+            int resultLength = inflater.inflate(result);
+            if (inflater.needsDictionary()) {
+                System.out.println("Specifying Dictionary");
+                inflater.setDictionary(dictInf.slice());
+                resultLength = inflater.inflate(result);
+            } else {
+                System.out.println("Did not need to use a Dictionary");
+            }
+            inflater.finished();
+            System.out.printf("Inflater::getAdler:%s, length: %s%n",
+                    inflater.getAdler(), resultLength);
+
+            Assert.assertEquals(SRC_DATA.length(), resultLength);
+            Assert.assertEquals(input, Arrays.copyOf(result, resultLength));
+        } finally {
+            // Release Resources
+            deflater.end();
+            inflater.end();
         }
-        inflater.finished();
+    }
 
-        // Decode the bytes into a String
-        String resultMessage = new String(result, 0, resultLength, UTF_8);
-        System.out.println("UnCompressed Message Checksum :" + inflater.getAdler());
-        System.out.println("UnCompressed Message length : " + resultMessage.length());
+    /**
+     * Validate that an invalid offset used with setDictionary will
+     * throw an Exception
+     *
+     * @param dictionary_offset offset value to be used
+     */
+    @Test(dataProvider = "invalidDictionaryOffsets")
+    public void testInvalidOffsets(int dictionary_offset) {
+        byte[] dictionary = DICTIONARY.getBytes(UTF_8);
 
-        Assert.assertEquals(message.length(), resultLength);
-        Assert.assertEquals(input, Arrays.copyOf(result, resultLength));
-
-        // Release Resources
-        deflater.end();
-        inflater.end();
+        Deflater deflater = new Deflater();
+        Inflater inflater = new Inflater();
+        try {
+            assertThrows(ArrayIndexOutOfBoundsException.class, () ->
+                    deflater.setDictionary(dictionary, dictionary_offset, DICTIONARY_LENGTH));
+            assertThrows(ArrayIndexOutOfBoundsException.class, () ->
+                    inflater.setDictionary(dictionary, dictionary_offset, DICTIONARY_LENGTH));
+        } finally {
+            // Release Resources
+            deflater.end();
+            inflater.end();
+        }
     }
 }
