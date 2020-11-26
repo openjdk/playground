@@ -24,23 +24,13 @@
  * @test
  * @bug 8076373
  * @summary Verify if signaling NaNs are preserved.
- * @library /test/lib /
  *
- * @build sun.hotspot.WhiteBox
- * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- * @run main/othervm -Xbootclasspath/a:. -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI
- *                   compiler.floatingpoint.NaNTest
+ * @run main compiler.floatingpoint.NaNTest
  */
 
 package compiler.floatingpoint;
 
-import jdk.test.lib.Platform;
-import jtreg.SkippedException;
-import sun.hotspot.WhiteBox;
-
 public class NaNTest {
-    static final WhiteBox WHITE_BOX = WhiteBox.getWhiteBox();
-
     static void testFloat() {
         int originalValue = 0x7f800001;
         int readBackValue = Float.floatToRawIntBits(Float.intBitsToFloat(originalValue));
@@ -73,34 +63,11 @@ public class NaNTest {
     }
 
     public static void main(String args[]) {
-        // Some platforms are known to strip signaling NaNs.
-        // The block below can be used to except them.
-        boolean expectStableFloats = true;
-        boolean expectStableDoubles = true;
+        System.out.println("### NanTest started");
 
-        // On x86_32 without relevant SSE-enabled stubs, we are entering
-        // native methods that use FPU instructions, and those strip the
-        // signaling NaNs.
-        if (Platform.isX86()) {
-            int sse = WHITE_BOX.getIntxVMFlag("UseSSE").intValue();
-            expectStableFloats = (sse >= 1);
-            expectStableDoubles = (sse >= 2);
-        }
+        testFloat();
+        testDouble();
 
-        if (expectStableFloats) {
-           testFloat();
-        } else {
-           System.out.println("Stable floats cannot be expected, skipping");
-        }
-
-        if (expectStableDoubles) {
-           testDouble();
-        } else {
-           System.out.println("Stable doubles cannot be expected, skipping");
-        }
-
-        if (!expectStableFloats && !expectStableDoubles) {
-           throw new SkippedException("No tests were run.");
-        }
+        System.out.println("### NanTest ended");
     }
 }

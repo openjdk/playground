@@ -94,12 +94,7 @@ size_t ZMark::calculate_nstripes(uint nworkers) const {
   return MIN2(nstripes, ZMarkStripesMax);
 }
 
-void ZMark::start() {
-  // Verification
-  if (ZVerifyMarking) {
-    verify_all_stacks_empty();
-  }
-
+void ZMark::prepare_mark() {
   // Increment global sequence number to invalidate
   // marking information for all pages.
   ZGlobalSeqNum++;
@@ -132,6 +127,16 @@ void ZMark::start() {
                 worker_id, _nworkers, stripe_id, nstripes);
     }
   }
+}
+
+void ZMark::start() {
+  // Verification
+  if (ZVerifyMarking) {
+    verify_all_stacks_empty();
+  }
+
+  // Prepare for concurrent mark
+  prepare_mark();
 }
 
 void ZMark::prepare_work() {
