@@ -36,7 +36,7 @@
 
 bool Jfr::is_enabled() {
   return JfrRecorder::is_enabled();
-}
+} 
 
 bool Jfr::is_disabled() {
   return JfrRecorder::is_disabled();
