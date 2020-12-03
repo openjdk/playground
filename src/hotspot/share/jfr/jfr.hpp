@@ -31,7 +31,7 @@
 class JavaThread;
 class Thread;
 
-extern "C" void JNICALL jfr_register_natives(JNIEnv*, jclass);
+extern "C" void JNICALL jfr_register_natives(JNIEnv*, jclass); 
 
 //
 // The VM interface to Flight Recorder.
