@@ -28,7 +28,7 @@ jbs=JDK
 version=16
 
 [checks]
-error=author,whitespace,executable,reviewers
+error=author,whitespace,executable
 
 [census]
 version=0
