@@ -25,7 +25,7 @@
 project=jdk
 repository=playground
 jbs=JDK
-version=16
+version=17
 
 [checks]
 error=author,whitespace,executable,problemlists
