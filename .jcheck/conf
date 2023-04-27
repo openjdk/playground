@@ -28,7 +28,7 @@ jbs=JDK
 version=16
 
 [checks]
-error=author,whitespace,executable,problemlists
+error=author,whitespace,executable,problemlists,reviewers
 
 [census]
 version=0
@@ -39,3 +39,6 @@ files=.*\.java$|.*\.c$|.*\.h$|.*.\cpp$|.*\.hpp$
 
 [checks "problemlists"]
 dirs=test/jdk|test/langtools|test/lib-test|test/hotspot/jtreg|test/jaxp
+
+[checks "reviewers"]
+reviewers=1
