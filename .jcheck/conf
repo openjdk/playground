@@ -42,4 +42,4 @@ files=.*\.java$|.*\.c$|.*\.h$|.*.\cpp$|.*\.hpp$
 dirs=test/jdk|test/langtools|test/lib-test|test/hotspot/jtreg|test/jaxp
 
 [checks "issues"]
-pattern=^(/d+): (\S.*)$
+pattern=^(\d+): (\S.*)$
