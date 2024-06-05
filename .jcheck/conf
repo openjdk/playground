@@ -22,7 +22,7 @@
 ;
 
 [general]
-project=jdk
+project=skara
 repository=playground
 jbs=JDK
 version=22
