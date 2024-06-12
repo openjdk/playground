@@ -29,7 +29,7 @@ version=22
 
 [checks]
 error=author,whitespace,executable,problemlists,issues
-warning=issuestitle
+warning=issuestitle,binary
 
 [census]
 version=0
