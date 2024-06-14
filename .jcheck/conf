@@ -28,7 +28,7 @@ jbs=JDK
 version=22
 
 [checks]
-error=author,whitespace,executable,problemlists,issues
+error=author,whitespace,executable,problemlists,issues,reviewers
 warning=issuestitle,binary
 
 [census]
@@ -43,3 +43,6 @@ dirs=test/jdk|test/langtools|test/lib-test|test/hotspot/jtreg|test/jaxp
 
 [checks "issues"]
 pattern=^(\d+): (\S.*)$
+
+[checks "reviewers"]
+authors=1
