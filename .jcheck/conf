@@ -25,7 +25,7 @@
 project=skara
 repository=playground
 jbs=JDK
-version=22
+version=openjdk8u432
 
 [checks]
 error=author,whitespace,executable,problemlists,issues,reviewers
