@@ -29,7 +29,7 @@ version=openjdk8u432
 
 [checks]
 error=author,whitespace,executable,problemlists,issues,reviewers
-warning=issuestitle,binary
+warning=issuestitle,binary,copyright
 
 [census]
 version=0
