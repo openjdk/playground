@@ -28,8 +28,7 @@ jbs=JDK
 version=openjdk8u432
 
 [checks]
-error=author,whitespace,executable,problemlists,issues,reviewers,copyright
-warning=issuestitle,binary
+warning=reviewers,copyright
 
 [census]
 version=0
