@@ -4,3 +4,4 @@ backport
 0507
 trailing space       
 	An additional line
+An additional line
