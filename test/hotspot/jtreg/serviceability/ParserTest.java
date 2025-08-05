@@ -49,6 +49,7 @@ public class ParserTest {
         testQuotes();
         testMemorySize();
         testSingleLetterArg();
+        // changes
     }
 
     public static void main(String... args) throws Exception  {
