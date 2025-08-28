@@ -39,6 +39,7 @@ import sun.util.logging.PlatformLogger;
  * Input Method Adapter for XIM for AIX
  *
  * @author JavaSoft International
+ * Update
  */
 public abstract class X11InputMethod extends X11InputMethodBase {
 
