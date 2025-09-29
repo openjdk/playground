@@ -21,7 +21,7 @@
 # or visit www.oracle.com if you need additional information or have any
 # questions.
 #
-
+# update
 # Shell script for generating an IDEA project from a given list of modules
 
 usage() {
